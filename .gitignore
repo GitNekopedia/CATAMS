@@ -1,17 +1,42 @@
-# Java / Spring Boot
+# ==========================
+# Java / Spring Boot backend
+# ==========================
 backend/target/
 backend/.idea/
 backend/.mvn/
-*.log
+backend/*.iml
+backend/*.log
 
-# Node / React
+# ==========================
+# Node / React frontend
+# ==========================
 frontend/node_modules/
 frontend/.umi/
+frontend/.umi-production/
 frontend/dist/
 frontend/.idea/
+frontend/*.log
+frontend/*.iml
 
-# System / IDE
+# ==========================
+# Local database & cache
+# ==========================
+mysql_data/
+redis_data/
+
+# ==========================
+# System / IDE files
+# ==========================
 .DS_Store
 *.iml
 .idea/
 .vscode/
+*.swp
+*.swo
+
+# ==========================
+# OS files
+# ==========================
+Thumbs.db
+ehthumbs.db
+Desktop.ini

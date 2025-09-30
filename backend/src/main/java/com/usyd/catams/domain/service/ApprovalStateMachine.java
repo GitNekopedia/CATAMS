@@ -1,33 +1,37 @@
 package com.usyd.catams.domain.service;
 
+import com.usyd.catams.domain.enums.Action;
 import com.usyd.catams.domain.enums.ApprovalStep;
 import com.usyd.catams.domain.enums.WorkStatus;
-import com.usyd.catams.domain.model.WorkEntry;
+import org.springframework.stereotype.Component;
 
-import java.util.EnumMap;
-import java.util.EnumSet;
 import java.util.Map;
-import java.util.Set;
 
+@Component
 public class ApprovalStateMachine {
+    private static final Map<WorkStatus, Map<String, WorkStatus>> transitions = Map.of(
+            // Tutor 提交
+            WorkStatus.DRAFT, Map.of(
+                    "TUTOR:SUBMIT", WorkStatus.SUBMITTED
+            ),
+            // Lecturer 审批
+            WorkStatus.SUBMITTED, Map.of(
+                    "LECTURER:APPROVE", WorkStatus.APPROVED_BY_LECTURER,
+                    "LECTURER:REJECT", WorkStatus.REJECTED
+            ),
+            // HR 审批
+            WorkStatus.APPROVED_BY_LECTURER, Map.of(
+                    "HR:APPROVE", WorkStatus.FINAL_APPROVED,
+                    "HR:REJECT", WorkStatus.REJECTED
+            )
+    );
 
-    private static final Map<WorkStatus, Set<WorkStatus>> TRANSITIONS = new EnumMap<>(WorkStatus.class);
-
-    static {
-        TRANSITIONS.put(WorkStatus.DRAFT, Set.of(WorkStatus.SUBMITTED));
-        TRANSITIONS.put(WorkStatus.SUBMITTED, Set.of(WorkStatus.APPROVED_BY_LECTURER, WorkStatus.REJECTED));
-        TRANSITIONS.put(WorkStatus.APPROVED_BY_LECTURER, Set.of(WorkStatus.APPROVED_BY_TUTOR, WorkStatus.REJECTED));
-        TRANSITIONS.put(WorkStatus.APPROVED_BY_TUTOR, Set.of(WorkStatus.FINAL_APPROVED, WorkStatus.REJECTED));
-        TRANSITIONS.put(WorkStatus.REJECTED, Set.of(WorkStatus.SUBMITTED));
-        TRANSITIONS.put(WorkStatus.FINAL_APPROVED, EnumSet.noneOf(WorkStatus.class));
-    }
-
-    public void transit(WorkEntry entry, WorkStatus target, ApprovalStep step) {
-        var allowed = TRANSITIONS.getOrDefault(entry.getStatus(), Set.of());
-        if (!allowed.contains(target)) {
-            throw new IllegalStateException("非法状态流转: " + entry.getStatus() + " -> " + target);
+    public WorkStatus next(WorkStatus current, ApprovalStep step, Action action) {
+        var key = step + ":" + action;
+        var map = transitions.get(current);
+        if (map == null || !map.containsKey(key)) {
+            throw new IllegalStateException("非法审批流转: " + current + " → " + key);
         }
-        // 可加角色/操作者校验：不同 step 对应不同角色
-        entry.setStatus(target);
+        return map.get(key);
     }
 }

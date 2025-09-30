@@ -1,43 +1,130 @@
 package com.usyd.catams.application.command;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.usyd.catams.adapter.persistence.WorkEntryMapper;
+import com.usyd.catams.adapter.persistence.*;
 import com.usyd.catams.adapter.web.dto.WorkEntrySubmitRequest;
+import com.usyd.catams.domain.enums.Action;
+import com.usyd.catams.domain.enums.ApprovalStep;
+import com.usyd.catams.domain.enums.WorkSource;
 import com.usyd.catams.domain.enums.WorkStatus;
+import com.usyd.catams.domain.model.ApprovalTask;
+import com.usyd.catams.domain.model.CourseUnit;
 import com.usyd.catams.domain.model.WorkEntry;
+import com.usyd.catams.infrastructure.cache.CourseMetaCache;
+import com.usyd.catams.infrastructure.cache.RedisWorkEntryCache;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 public class SubmitWorkEntryHandler {
     private final WorkEntryMapper workEntryMapper;
-    public SubmitWorkEntryHandler(WorkEntryMapper mapper){ this.workEntryMapper = mapper; }
+    private final ApprovalTaskMapper approvalTaskMapper;
+    private final UnitAssignmentMapper unitAssignmentMapper;
+    private final CourseUnitMapper courseUnitMapper;
+
+    private final RedisWorkEntryCache weCache;
+    private final CourseMetaCache courseMetaCache;
+    private final TaskMapper taskMapper;
+    private final UserMapper userMapper;
+
+    public SubmitWorkEntryHandler(WorkEntryMapper workEntryMapper,
+                                  ApprovalTaskMapper approvalTaskMapper,
+                                  UnitAssignmentMapper unitAssignmentMapper,
+                                  CourseUnitMapper courseUnitMapper,
+                                  RedisWorkEntryCache weCache,
+                                  CourseMetaCache courseMetaCache,
+                                  TaskMapper taskMapper,
+                                  UserMapper userMapper) {
+        this.workEntryMapper = workEntryMapper;
+        this.approvalTaskMapper = approvalTaskMapper;
+        this.unitAssignmentMapper = unitAssignmentMapper;
+        this.courseUnitMapper = courseUnitMapper;
+        this.weCache = weCache;
+        this.courseMetaCache = courseMetaCache;
+        this.taskMapper = taskMapper;
+        this.userMapper = userMapper;
+    }
 
     @Transactional
-    public Long handle(WorkEntrySubmitRequest req) {
-        // 业务校验（示例）：同 tutor/unit/weekStart 不可重复
-        var exists = workEntryMapper.selectCount(new LambdaQueryWrapper<WorkEntry>()
-                .eq(WorkEntry::getTutorId, req.tutorId())
-                .eq(WorkEntry::getUnitId, req.unitId())
-                .eq(WorkEntry::getWeekStart, req.weekStart())) > 0;
-        if (exists) throw new IllegalStateException("该周已存在工时记录");
+    public Long handle(Long submitterId, WorkEntrySubmitRequest req) {
+        CourseUnit unit = null;
 
-        // payRateSnapshot 实际应来自 tutor_assignment，此处先用占位
+        // 先尝试缓存
+        try {
+            unit = courseMetaCache.getById(req.unitId());
+        } catch (Exception e) {
+            // 这里不直接抛，让它继续走 DB fallback
+            log.warn("Cache lookup failed for unitId={}, fallback to DB", req.unitId(), e);
+        }
+
+        // 缓存没有命中，就查数据库
+        if (unit == null) {
+            unit = courseUnitMapper.findById(req.unitId());
+        }
+
+        // 兜底校验
+        if (unit == null) {
+            throw new IllegalStateException("课程不存在");
+        }
+
+
+        // 查薪资快照
+        BigDecimal payRate = unitAssignmentMapper.findPayRate(submitterId, req.unitId());
+        if (payRate == null) throw new IllegalStateException("未找到 tutor 的薪资记录");
+
+        // 根据task 获取worktype
+        Long taskId = req.taskId();
+        String workType = taskMapper.getTaskTypeById(taskId);
+
+        // 唯一性校验：同 tutor + original_planned_id 不能重复
+        boolean exists = workEntryMapper.exists(new LambdaQueryWrapper<WorkEntry>()
+                .eq(WorkEntry::getTutorId, submitterId)
+                .eq(WorkEntry::getOriginPlannedId, req.originPlannedId()));
+        if (exists) throw new IllegalStateException("该任务在该周已提交过工时");
+
+        LocalDateTime now = LocalDateTime.now();
+
         var entry = new WorkEntry();
-        entry.setTutorId(req.tutorId());
+        entry.setTutorId(submitterId);
         entry.setUnitId(req.unitId());
+        entry.setUnitCode(unit.getCode());
+        entry.setUnitName(unit.getName());
+        entry.setTaskId(req.taskId());
+        entry.setOriginPlannedId(req.originPlannedId());
         entry.setWeekStart(req.weekStart());
-        entry.setWorkType(req.workType());
-        entry.setDescription(req.description());
         entry.setHours(req.hours());
-        entry.setPayRateSnapshot(new BigDecimal("50.00")); // TODO: 查询 tutor_assignment
+        entry.setDescription(req.description());
+        entry.setPayRateSnapshot(payRate);
+        entry.setWorkType(workType);
+
+        // 根据 substitute 标记来源
+        entry.setSource(req.substitute() ? WorkSource.ADHOC : WorkSource.PLANNED);
         entry.setStatus(WorkStatus.SUBMITTED);
+        entry.setCreatedAt(now);
+        entry.setUpdatedAt(now);
         entry.setVersion(0);
 
         workEntryMapper.insert(entry);
-        // TODO: 预算预占（Redis/Lua + 记 budget_ledger），缓存失效
+
+        // workEntry 插入成功之后插入一条 approvalTask
+        var task = new ApprovalTask();
+        task.setEntryId(entry.getId());
+        task.setStep(ApprovalStep.TUTOR);
+        task.setAction(Action.SUBMITTED);
+        task.setComment(null);
+        task.setActorId(submitterId);
+        String name = userMapper.findNameById(submitterId);
+        task.setActorName(name);
+        approvalTaskMapper.insert(task);
+
         return entry.getId();
+
     }
 }
+
+

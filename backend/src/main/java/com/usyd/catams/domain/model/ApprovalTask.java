@@ -1,6 +1,7 @@
 package com.usyd.catams.domain.model;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.usyd.catams.domain.enums.Action;
 import com.usyd.catams.domain.enums.ApprovalStep;
 import lombok.Data;
 
@@ -11,7 +12,8 @@ public class ApprovalTask {
     private Long id;
     private Long entryId;
     private ApprovalStep step;
-    private String action; // APPROVE/REJECT
+    private Action action; // SUBMITTED/APPROVE/REJECT
     private String comment;
     private Long actorId;
+    private String actorName;
 }

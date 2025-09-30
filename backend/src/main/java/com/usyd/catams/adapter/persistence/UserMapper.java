@@ -8,6 +8,10 @@ import org.apache.ibatis.annotations.Select;
 @Mapper
 public interface UserMapper extends BaseMapper<UserEntity> {
 
+    @Select("SELECT name FROM user WHERE id = #{id}")
+    String findNameById(Long id);
+
+
     @Select("SELECT * FROM user WHERE email = #{email}")
     UserEntity findByEmail(String email);
 }

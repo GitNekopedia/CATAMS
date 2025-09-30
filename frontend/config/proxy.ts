@@ -21,6 +21,16 @@ export default {
       changeOrigin: true,
     },
   },
+
+  prod: {
+    '/api/': {
+      target: process.env.API_BASE_URL || 'http://43.139.68.187:9000',
+      changeOrigin: true,
+      pathRewrite: { '^/api': '/api' },
+    },
+  },
+
+
   /**
    * @name 详细的代理配置
    * @doc https://github.com/chimurai/http-proxy-middleware

@@ -1,62 +1,53 @@
 package com.usyd.catams.application.command;
 
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.usyd.catams.adapter.persistence.ApprovalTaskMapper;
 import com.usyd.catams.adapter.persistence.WorkEntryMapper;
 import com.usyd.catams.adapter.web.dto.ApproveActionRequest;
-import com.usyd.catams.domain.enums.ApprovalStep;
 import com.usyd.catams.domain.enums.WorkStatus;
 import com.usyd.catams.domain.model.ApprovalTask;
 import com.usyd.catams.domain.model.WorkEntry;
 import com.usyd.catams.domain.service.ApprovalStateMachine;
-import org.springframework.stereotype.Service;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-@Service
+@Component
+@RequiredArgsConstructor
 public class ApproveWorkEntryHandler {
+
     private final WorkEntryMapper workEntryMapper;
-    private final ApprovalTaskMapper taskMapper;
-    private final ApprovalStateMachine sm = new ApprovalStateMachine();
+    private final ApprovalStateMachine approvalStateMachine;
+    private final ApprovalTaskMapper approvalTaskMapper;
 
-    public ApproveWorkEntryHandler(WorkEntryMapper w, ApprovalTaskMapper t) {
-        this.workEntryMapper = w; this.taskMapper = t;
-    }
-
+    /**
+     * 处理审批动作
+     */
     @Transactional
-    public void handle(ApproveActionRequest req, Long operatorId) {
+    public void handle(ApproveActionRequest req, Long actorId, String actorName) {
         WorkEntry entry = workEntryMapper.selectById(req.entryId());
-        if (entry == null) throw new IllegalArgumentException("工时不存在");
+        if (entry == null) {
+            throw new IllegalStateException("工时不存在");
+        }
 
-        var step = ApprovalStep.valueOf(req.step());
-        var action = req.action().toUpperCase();
-
-        WorkStatus target = switch (step) {
-            case LECTURER -> "APPROVE".equals(action) ? WorkStatus.APPROVED_BY_LECTURER : WorkStatus.REJECTED;
-            case TUTOR    -> "APPROVE".equals(action) ? WorkStatus.APPROVED_BY_TUTOR    : WorkStatus.REJECTED;
-            case HR       -> "APPROVE".equals(action) ? WorkStatus.FINAL_APPROVED       : WorkStatus.REJECTED;
-        };
-
-        sm.transit(entry, target, step);
-
-        // 乐观锁更新（带 version）
-        int updated = workEntryMapper.update(entry,
-                Wrappers.<WorkEntry>lambdaUpdate()
-                        .eq(WorkEntry::getId, entry.getId())
-                        .eq(WorkEntry::getVersion, entry.getVersion())
-                        .set(WorkEntry::getStatus, entry.getStatus())
-                        .set(WorkEntry::getVersion, entry.getVersion() + 1)
+        // 根据当前状态、审批人操作计算下一个状态
+        WorkStatus nextStatus = approvalStateMachine.next(
+                entry.getStatus(),
+                req.step(),
+                req.action()
         );
-        if (updated == 0) throw new IllegalStateException("并发修改，请重试");
 
-        // 记录审批轨迹
-        var task = new ApprovalTask();
+        // 更新工时状态
+        entry.setStatus(nextStatus);
+        workEntryMapper.updateById(entry);
+
+        // 记录审批任务
+        ApprovalTask task = new ApprovalTask();
         task.setEntryId(entry.getId());
-        task.setStep(step);
-        task.setAction(action);
+        task.setStep(req.step());
+        task.setAction(req.action());
         task.setComment(req.comment());
-        task.setActorId(operatorId);
-        taskMapper.insert(task);
-
-        // TODO: 预算释放/实扣、通知、缓存失效、审计日志
+        task.setActorId(actorId);
+        task.setActorName(actorName);
+        approvalTaskMapper.insert(task);
     }
 }

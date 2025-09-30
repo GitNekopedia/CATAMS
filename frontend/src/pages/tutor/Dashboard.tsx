@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { message } from 'antd';
-import { getTutorCourses, getRecentEntries, getStats } from '@/services/dashboard';
+import {getTutorCourses, getRecentEntries, getStats, submitWorkEntry} from '@/services/dashboard';
 import DashboardLayout from '@/components/common/DashboardLayout';
-import TopBanner from '@/components/common/TopBanner';
-import CourseCards from '@/components/common/CourseCards';
-import Activity from '@/components/common/Activity';
 import StatCards from '@/components/common/StatCards';
+import TopBannerTutor from "@/components/common/TopBanner/TopBannerTutor";
+import CourseCardsTutor from "@/components/common/CourseCards/CourseCardsTutor";
+import ActivityTutor from "@/components/common/Activity/ActivityTutor";
 
 const TutorDashboard: React.FC = () => {
-  const [courses, setCourses] = useState<API.CourseUnit[]>([]);
+  const [courses, setCourses] = useState<API.TutorCourse[]>([]);
   const [entries, setEntries] = useState<API.WorkEntry[]>([]);
   const [stats, setStats] = useState<API.StatData>({
     workCount: 0,
@@ -43,13 +43,27 @@ const TutorDashboard: React.FC = () => {
     }
   };
 
+  const handleCreate = async (payload: API.WorkEntrySubmitRequest) => {
+    const res = await submitWorkEntry(payload);
+    if (res.success) {
+      message.success('工时提交成功');
+      fetchData(); // 刷新课程/entries/stats
+    } else {
+      message.error(res.message || '提交失败');
+    }
+  };
+
   return (
     <DashboardLayout
-      topBanner={<TopBanner courses={courses} />}
+      topBanner={<TopBannerTutor courses={courses} />}
       main={
         <>
-          <CourseCards courses={courses} />
-          <Activity entries={entries} />
+          <CourseCardsTutor courses={courses} />
+          <ActivityTutor
+            entries={entries}
+            tutorCourses={courses}
+            onCreate={handleCreate}
+          />
         </>
       }
       side={<StatCards stats={stats} />}
