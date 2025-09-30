@@ -16,6 +16,7 @@ import defaultSettings from '../config/defaultSettings';
 import { errorConfig } from './requestErrorConfig';
 import '@ant-design/v5-patch-for-react-19';
 
+declare const API_BASE_URL: string;
 const isDev = process.env.NODE_ENV === 'development';
 const loginPath = '/user/login';
 
@@ -150,6 +151,6 @@ export const layout: RunTimeLayoutConfig = ({
  * @doc https://umijs.org/docs/max/request#配置
  */
 export const request: RequestConfig = {
-  baseURL: 'http://localhost:9000',
+  baseURL: API_BASE_URL,
   ...errorConfig,
 };
