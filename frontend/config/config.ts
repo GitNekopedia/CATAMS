@@ -9,7 +9,7 @@ import routes from './routes';
 
 const { REACT_APP_ENV = 'dev' } = process.env;
 
-const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:9000';
+const API_BASE_URL = process.env.API_BASE_URL || '/api';
 
 /**
  * @name 使用公共路径
