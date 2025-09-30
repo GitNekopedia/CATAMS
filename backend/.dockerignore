@@ -1,0 +1,23 @@
+# Maven / Gradle 构建产物
+target/*
+!target/*.jar
+build
+out
+
+# IDE 配置文件
+.idea
+*.iml
+*.ipr
+*.iws
+.vscode
+
+# Git / 临时文件
+.git
+.gitignore
+*.log
+*.tmp
+*.swp
+.DS_Store
+
+# Dockerfile 自身不要忽略
+# Dockerfile

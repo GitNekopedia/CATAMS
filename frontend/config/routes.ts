@@ -11,15 +11,43 @@
  * @doc https://umijs.org/docs/guides/routes
  */
 export default [
+
+
   {
     path: '/tutor/dashboard',
     name: 'Tutor Dashboard',
     component: './tutor/Dashboard',
+    access: 'canTutor'
+  },
+  {
+    path: '/tutor/allocations',
+    name: 'Unit Allocation',
+    component: './tutor/TutorAllocations',
+    access: 'canTutor'
+  },
+  {
+    path: '/tutor/work-entries',
+    name: 'My WorkEntries',
+    component: './tutor/DetailedTutorWorkEntries',
+    access: 'canTutor'
   },
   {
     path: '/lecturer/dashboard',
     name: 'Lecturer Dashboard',
     component: './lecturer/Dashboard',
+    access: 'canLecturer',
+  },
+  {
+    path: '/lecturer/unit-allocations',
+    name: 'Unit Allocations',
+    component: './lecturer/UnitAllocations',
+    access: 'canLecturer',
+  },
+  {
+    path: '/lecturer/work-entries',
+    name: 'View WorkEntries',
+    component: './lecturer/DetailedLecturerPendingApprovals',
+    access: 'canLecturer',
   },
   {
     path: '/user',
@@ -33,10 +61,10 @@ export default [
     ],
   },
   {
-    path: '/welcome',
-    name: 'welcome',
-    icon: 'smile',
-    component: './Welcome',
+    // path: '/welcome',
+    // name: 'welcome',
+    // icon: 'smile',
+    // component: './Welcome',
   },
   {
     path: '/admin',
@@ -56,10 +84,10 @@ export default [
     ],
   },
   {
-    name: 'list.table-list',
-    icon: 'table',
-    path: '/list',
-    component: './table-list',
+    // name: 'list.table-list',
+    // icon: 'table',
+    // path: '/list',
+    // component: './table-list',
   },
   {
     path: '/',

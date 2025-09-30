@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react';
 import { message } from 'antd';
 import DashboardLayout from '@/components/common/DashboardLayout';
-import TopBanner from '@/components/common/TopBanner';
-import CourseCards from '@/components/common/CourseCards';
-import Activity from '@/components/common/Activity';
 import StatCards from '@/components/common/StatCards';
 import PendingApprovals from '@/components/common/PendingApprovals';
 import {
@@ -12,20 +9,27 @@ import {
   getLecturerStats,
   getPendingApprovals
 } from '@/services/dashboard';
+import TopBannerLecturer from "@/components/common/TopBanner/TopBannerLecturer";
+import CourseCardsLecturer from "@/components/common/CourseCards/CourseCardsLecturer";
+import ActivityLecturer from "@/components/common/Activity/ActivityLecturer";
 
 const LecturerDashboard: React.FC = () => {
-  const [courses, setCourses] = useState<API.CourseUnit[]>([]);
-  const [entries, setEntries] = useState<API.WorkEntry[]>([]);
+  const [courses, setCourses] = useState<API.LecturerCourse[]>([]);
+  const [entries, setEntries] = useState<API.LecturerPendingWorkEntry[]>([]);
   const [stats, setStats] = useState<API.StatData>({
     workCount: 0,
     remainingBudget: 0,
     approvalProgress: 0,
   });
-  const [approvals, setApprovals] = useState<API.WorkEntry[]>([]);
+  const [approvals, setApprovals] = useState<API.LecturerPendingWorkEntry[]>([]);
 
   useEffect(() => {
     fetchData();
   }, []);
+  useEffect(() => {
+    console.log("courses in state:", courses);
+  }, [courses]); // 依赖 courses
+
 
   const fetchData = async () => {
     try {
@@ -56,11 +60,11 @@ const LecturerDashboard: React.FC = () => {
 
   return (
     <DashboardLayout
-      topBanner={<TopBanner courses={courses} />}
+      topBanner={<TopBannerLecturer courses={courses} />}
       main={
         <>
-          <CourseCards courses={courses} />
-          <Activity entries={entries} /> {/* 改成显示最近审批动作 */}
+          <CourseCardsLecturer courses={courses} />
+          <ActivityLecturer entries={entries} /> {/* 改成显示最近审批动作 */}
         </>
       }
       side={

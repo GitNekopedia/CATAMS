@@ -4,17 +4,16 @@ import { request } from '@umijs/max';
 
 /** 获取当前的用户 GET /api/currentUser */
 export async function currentUser(options?: { [key: string]: any }) {
-  return request<{
-    data: API.CurrentUser;
-  }>('/api/auth/currentUser', {
+  return request<API.ApiResponse<API.CurrentUser>>('/api/auth/currentUser', {
     method: 'GET',
     ...(options || {}),
   });
 }
 
-/** 退出登录接口 POST /api/login/outLogin */
+
+/** 退出登录接口 POST /api/auth/outLogin */
 export async function outLogin(options?: { [key: string]: any }) {
-  return request<Record<string, any>>('/api/login/outLogin', {
+  return request<Record<string, any>>('/api/auth/outLogin', {
     method: 'POST',
     ...(options || {}),
   });

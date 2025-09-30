@@ -1,15 +1,58 @@
+// @ts-ignore
 import { request } from '@umijs/max';
 
+// 获取某个 unit 下的 tutor
+export async function getTutorsOfCourse(unitId: number) {
+  return request<API.ApiResponse<API.TutorOfCourseDTO[]>>('/api/lecturer/units/tutors', {
+    method: 'GET',
+    params: { unitId },
+  });
+}
+
+export async function submitWorkEntry(data: API.WorkEntrySubmitRequest) {
+  return request<API.ApiResponse<any>>('/api/work-entry/submit', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 统一审批接口
+export async function submitApprovalAction(payload: {
+  entryId: number;
+  step: API.ApprovalStep; // LECTURER / HR
+  action: API.ApprovalAction;
+  comment?: string;
+}) {
+  return request<API.ApiResponse<void>>('/api/approvals/action', {
+    method: 'POST',
+    data: payload,
+  });
+}
+
+
+export async function getAllLecturerEntries() {
+  return request<API.ApiResponse<API.DetailedLecturerPendingWorkEntry[]>>('/api/lecturer/work-entries/all', {
+    method: 'GET',
+  });
+}
+
+export async function getAllTutorEntries() {
+  return request<API.ApiResponse<API.DetailedWorkEntry[]>>('/api/tutor/work-entries/all', {
+    method: 'GET',
+  });
+}
+
+
 export async function getPendingApprovals() {
-  return request<API.ApiResponse<API.WorkEntry[]>>('/api/lecturer/pending-approvals');
+  return request<API.ApiResponse<API.LecturerPendingWorkEntry[]>>('/api/lecturer/entries');
 }
 
 export async function getLecturerCourses() {
-  return request<API.ApiResponse<API.CourseUnit[]>>('/api/lecturer/courses');
+  return request<API.ApiResponse<API.LecturerCourse[]>>('/api/lecturer/courses');
 }
 
 export async function getLecturerEntries() {
-  return request<API.ApiResponse<API.WorkEntry[]>>('/api/lecturer/recent-entries');
+  return request<API.ApiResponse<API.LecturerPendingWorkEntry[]>>('/api/lecturer/entries');
 }
 
 export async function getLecturerStats() {
@@ -17,7 +60,7 @@ export async function getLecturerStats() {
 }
 
 export async function getTutorCourses() {
-  return request<API.ApiResponse<API.CourseUnit[]>>('/api/tutor/courses', {
+  return request<API.ApiResponse<API.TutorCourse[]>>('/api/tutor/courses', {
     method: 'GET',
   });
 }
@@ -34,19 +77,3 @@ export async function getStats() {
   });
 }
 
-// 获取当前用户信息
-export async function getCurrentUser() {
-  return request<API.CurrentUser>('/api/auth/currentUser');
-}
-
-export async function getMyCourses() {
-  return request('/api/tutor/my-courses');
-}
-
-export async function getTutorStats() {
-  return request('/api/tutor/statistics');
-}
-
-export async function getRecentWorkEntries() {
-  return request('/api/tutor/recent-entries');
-}

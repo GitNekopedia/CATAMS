@@ -8,9 +8,19 @@ spring:
     password: catams
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+
+  rabbitmq:
+#    host: localhost
+#    port: 16672
+    host: catams-rabbitmq   # docker-compose 里定义的 service 名
+    port: 5672
+    username: guest
+    password: guest
+
   data:
     redis:
       host: localhost
+#      host: redis    # docker-compose 里定义的 service 名
       port: 6379
       database: 0
 
@@ -21,6 +31,12 @@ spring:
 
   cache:
     type: redis
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    serialization:
+      write-dates-as-timestamps: false
 
 server:
   port: 9000

@@ -52,5 +52,16 @@ public class AuthController {
         return ApiResponse.ok(user);
     }
 
+    @PostMapping("/outLogin")
+    public ApiResponse<String> outLogin(HttpServletRequest request) {
+        // 从请求中提取用户
+        var user = tokenService.extractUserFromRequest(request);
+        if (user == null) {
+            return ApiResponse.fail("Unauthorized");
+        }
 
+        // 前端会清掉本地 token，所以这里只需要返回成功
+        return ApiResponse.ok("Logged out successfully");
+
+    }
 }

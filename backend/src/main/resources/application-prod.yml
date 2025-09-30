@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: CATAMS
+
+  datasource:
+    url: jdbc:mysql://catams-mysql:3306/catams?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8
+    username: catams
+    password: catams
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  rabbitmq:
+    host: catams-rabbitmq   # docker-compose 里定义的 service 名
+    port: 5672
+    username: guest
+    password: guest
+
+  data:
+    redis:
+      host: redis    # docker-compose 里定义的 service 名
+      port: 6379
+      database: 0
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  cache:
+    type: redis
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    serialization:
+      write-dates-as-timestamps: false
+
+server:
+  port: 9000
+
+logging:
+  level:
+    root: info
+    com.usyd.catams: debug

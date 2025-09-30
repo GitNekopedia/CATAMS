@@ -1,6 +1,6 @@
 import React from 'react';
 import { List, Tag } from 'antd';
-import WorkEntry = API.WorkEntry;
+import WorkEntry = API.LecturerPendingWorkEntry;
 
 type Props = {
   approvals: WorkEntry[];

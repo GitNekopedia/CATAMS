@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: catams-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: catams
+      MYSQL_USER: catams
+      MYSQL_PASSWORD: catams
+    ports:
+      - "3310:3306"
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+
+  redis:
+    image: redis:7.2
+    container_name: catams-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis_data:/data
+    command: [ "redis-server", "--appendonly", "yes" ]
+
+  backend:
+    build: ./backend
+    restart: always
+    depends_on:
+      - mysql
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/catams?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8
+      SPRING_DATASOURCE_USERNAME: catams
+      SPRING_DATASOURCE_PASSWORD: catams
+      SPRING_PROFILES_ACTIVE: prod
+    ports:
+      - "9000:9000"
+
+  frontend:
+    build: ./frontend
+    container_name: catams-frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "80:80"

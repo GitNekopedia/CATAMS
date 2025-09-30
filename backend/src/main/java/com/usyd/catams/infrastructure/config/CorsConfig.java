@@ -11,7 +11,7 @@ public class CorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**") // 你可以根据需要改为 "/**"
-                .allowedOrigins("http://localhost:8000") // 前端地址
+                .allowedOriginPatterns("*") // 前端地址
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true) // 如果前端有带 cookie / token 等
