@@ -38,6 +38,11 @@ public class CacheConfig {
         ObjectMapper om = new ObjectMapper();
         om.registerModule(new JavaTimeModule());
         om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+        // 启用多态类型信息，反序列化时能还原具体类
+        om.activateDefaultTyping(
+                om.getPolymorphicTypeValidator(),
+                ObjectMapper.DefaultTyping.NON_FINAL
+        );
         return om;
     }
 }

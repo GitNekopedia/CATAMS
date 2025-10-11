@@ -2,6 +2,19 @@ spring:
   application:
     name: CATAMS
 
+  mail:
+    host: smtp.qq.com
+    port: 465
+    username: 1842640660@qq.com
+    password: oohscbwwtcvobbda   # 这里填你在QQ邮箱生成的“授权码”
+    protocol: smtps
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+
   datasource:
     url: jdbc:mysql://localhost:3308/catams?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8
     username: catams
@@ -10,12 +23,11 @@ spring:
 
 
   rabbitmq:
-#    host: localhost
-#    port: 16672
-    host: catams-rabbitmq   # docker-compose 里定义的 service 名
+    host: localhost          # 本地开发用
+#    host: catams-rabbitmq   # docker-compose 里定义的 service 名
     port: 5672
-    username: guest
-    password: guest
+    username: admin
+    password: admin
 
   data:
     redis:
@@ -40,6 +52,16 @@ spring:
 
 server:
   port: 9000
+
+catams:
+  auth:
+    token:
+      prefer: true          # true=优先 Redis, false=强制用内存
+      startup-check: true   # true=启动时 ping Redis
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
 logging:
   level:

@@ -8,8 +8,8 @@ import proxy from './proxy';
 import routes from './routes';
 
 const { REACT_APP_ENV = 'dev' } = process.env;
-
-const API_BASE_URL = process.env.API_BASE_URL || '/api';
+console.log(process.env)
+const API_BASE_URL = process.env.API_BASE_URL || '';
 
 /**
  * @name 使用公共路径

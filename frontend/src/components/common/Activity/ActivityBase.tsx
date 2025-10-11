@@ -1,10 +1,10 @@
 import React from 'react';
 import { List, Tag } from 'antd';
+import { useIntl } from '@umijs/max';
 
-// 公共字段约束：保证传进来的类型至少有这些属性
 type BaseWorkEntry = {
-  id?: number;              // WorkEntry 用
-  workEntryId?: number;     // LecturerPendingWorkEntry 用
+  id?: number;
+  workEntryId?: number;
   unitCode?: string;
   unitName?: string;
   weekStart: string;
@@ -31,25 +31,25 @@ const statusColor = (status: string) => {
     case 'APPROVED_BY_TUTOR':
       return 'blue';
     default:
-      return 'orange'; // DRAFT 等
+      return 'orange';
   }
 };
 
 const ActivityBase = <T extends BaseWorkEntry>({ entries, header, renderActions }: Props<T>) => {
+  const intl = useIntl();
+
   return (
     <List
       header={header}
       bordered
       dataSource={entries}
       renderItem={(item) => {
-        // 统一 ID 获取逻辑
         const id = item.id ?? item.workEntryId;
-
         return (
           <List.Item key={id} extra={renderActions?.(item)}>
             <List.Item.Meta
-              title={`${item.unitCode ?? '-'} ${item.unitName ?? '未知课程'} (${item.weekStart})`}
-              description={`Hours: ${item.hours} • ${item.workType ?? '-'}`}
+              title={`${item.unitCode ?? '-'} ${item.unitName ?? intl.formatMessage({ id: 'activity.unit.unknown' })} (${item.weekStart})`}
+              description={`${intl.formatMessage({ id: 'activity.hours' })}: ${item.hours} • ${intl.formatMessage({ id: 'activity.workType' })}: ${item.workType ?? '-'}`}
             />
             <Tag color={statusColor(item.status)}>{item.status}</Tag>
           </List.Item>

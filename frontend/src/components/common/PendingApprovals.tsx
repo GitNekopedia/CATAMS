@@ -1,5 +1,6 @@
 import React from 'react';
 import { List, Tag } from 'antd';
+import { useIntl } from '@umijs/max';
 import WorkEntry = API.LecturerPendingWorkEntry;
 
 type Props = {
@@ -7,21 +8,28 @@ type Props = {
 };
 
 const PendingApprovals: React.FC<Props> = ({ approvals }) => {
+  const intl = useIntl();
+
   return (
     <List
-      header={<div>待审批工时</div>}
+      header={<div>{intl.formatMessage({ id: 'pendingApprovals.header' })}</div>}
       bordered
       dataSource={approvals}
       renderItem={(item) => (
         <List.Item
           actions={[
-            <a key="approve">批准</a>,
-            <a key="reject" style={{ color: 'red' }}>拒绝</a>,
+            <a key="approve">{intl.formatMessage({ id: 'pendingApprovals.approve' })}</a>,
+            <a key="reject" style={{ color: 'red' }}>
+              {intl.formatMessage({ id: 'pendingApprovals.reject' })}
+            </a>,
           ]}
         >
           <List.Item.Meta
             title={`${item.unitName} (${item.weekStart})`}
-            description={`申请时长: ${item.hours} 小时`}
+            description={intl.formatMessage(
+              { id: 'pendingApprovals.duration' },
+              { hours: item.hours }
+            )}
           />
           <Tag color="orange">{item.status}</Tag>
         </List.Item>

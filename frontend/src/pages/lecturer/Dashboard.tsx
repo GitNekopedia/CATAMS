@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { message } from 'antd';
+import { message, Space } from 'antd';
+import { useIntl } from '@umijs/max';
 import DashboardLayout from '@/components/common/DashboardLayout';
 import StatCards from '@/components/common/StatCards';
 import PendingApprovals from '@/components/common/PendingApprovals';
@@ -7,13 +8,14 @@ import {
   getLecturerCourses,
   getLecturerEntries,
   getLecturerStats,
-  getPendingApprovals
+  getPendingApprovals,
 } from '@/services/dashboard';
-import TopBannerLecturer from "@/components/common/TopBanner/TopBannerLecturer";
-import CourseCardsLecturer from "@/components/common/CourseCards/CourseCardsLecturer";
-import ActivityLecturer from "@/components/common/Activity/ActivityLecturer";
+import TopBannerLecturer from '@/components/common/TopBanner/TopBannerLecturer';
+import CourseCardsLecturer from '@/components/common/CourseCards/CourseCardsLecturer';
+import ActivityLecturer from '@/components/common/Activity/ActivityLecturer';
 
 const LecturerDashboard: React.FC = () => {
+  const intl = useIntl();
   const [courses, setCourses] = useState<API.LecturerCourse[]>([]);
   const [entries, setEntries] = useState<API.LecturerPendingWorkEntry[]>([]);
   const [stats, setStats] = useState<API.StatData>({
@@ -26,10 +28,6 @@ const LecturerDashboard: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, []);
-  useEffect(() => {
-    console.log("courses in state:", courses);
-  }, [courses]); // 依赖 courses
-
 
   const fetchData = async () => {
     try {
@@ -51,32 +49,34 @@ const LecturerDashboard: React.FC = () => {
 
       if (approvalRes.success) setApprovals(approvalRes.data);
       else message.error(approvalRes.message);
-
     } catch (err) {
       console.error(err);
-      message.error('加载数据失败');
+      message.error(intl.formatMessage({ id: 'dashboard.loadFail' }));
     }
   };
 
   return (
     <DashboardLayout
-      topBanner={<TopBannerLecturer courses={courses} />}
+      topBanner={
+        <div style={{ marginBottom: 24 }}>
+          <TopBannerLecturer courses={courses} />
+        </div>
+      }
       main={
         <>
           <CourseCardsLecturer courses={courses} />
-          <ActivityLecturer entries={entries} /> {/* 改成显示最近审批动作 */}
+          <ActivityLecturer entries={entries} />
         </>
       }
       side={
         <>
           <StatCards stats={stats} />
-          <div style={{ marginTop: 24 }}>
-            <PendingApprovals approvals={approvals} />
-          </div>
+          <PendingApprovals approvals={approvals} />
         </>
       }
     />
   );
+
 };
 
 export default LecturerDashboard;

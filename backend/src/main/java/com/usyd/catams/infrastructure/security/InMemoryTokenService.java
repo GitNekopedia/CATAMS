@@ -3,15 +3,11 @@ package com.usyd.catams.infrastructure.security;
 import com.usyd.catams.adapter.web.dto.LoginResponse;
 import com.usyd.catams.application.service.AuthTokenService;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.context.annotation.Primary;
-import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Service
-@Primary // 多实现时优先使用这个
 public class InMemoryTokenService implements AuthTokenService {
 
     /**

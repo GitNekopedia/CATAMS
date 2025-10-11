@@ -23,6 +23,20 @@ services:
       - ./redis_data:/data
     command: [ "redis-server", "--appendonly", "yes" ]
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: catams-rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"     # 应用连接端口（Spring Boot 用这个）
+      - "15672:15672"   # 管理控制台端口（浏览器查看队列）
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    volumes:
+      - ./rabbitmq_data:/var/lib/rabbitmq
+
+
   backend:
     image: dockernekopedia/catams-backend:latest   # 👈 用你推到 Docker Hub 的镜像
     container_name: catams-backend
@@ -30,6 +44,7 @@ services:
     depends_on:
       - mysql
       - redis
+      - rabbitmq
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/catams?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8
       SPRING_DATASOURCE_USERNAME: catams

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Table, Tag, message, Input, Space, Collapse, Button, Modal, Form } from 'antd';
+import { useIntl } from '@umijs/max';
 import { getAllLecturerEntries, submitApprovalAction } from '@/services/dashboard';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -7,12 +8,12 @@ const { Search } = Input;
 const { Panel } = Collapse;
 
 const DetailedLecturerPendingApprovals: React.FC = () => {
+  const intl = useIntl();
   const [currentAction, setCurrentAction] = useState<API.ApprovalAction | null>(null);
   const [entries, setEntries] = useState<API.DetailedLecturerPendingWorkEntry[]>([]);
   const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // 弹窗状态
   const [modalVisible, setModalVisible] = useState(false);
   const [currentRecord, setCurrentRecord] = useState<API.DetailedLecturerPendingWorkEntry | null>(null);
   const [form] = Form.useForm();
@@ -21,20 +22,17 @@ const DetailedLecturerPendingApprovals: React.FC = () => {
     fetchData();
   }, []);
 
-
-
   const fetchData = async () => {
     setLoading(true);
     const res = await getAllLecturerEntries();
     if (res.success) {
       setEntries(res.data || []);
     } else {
-      message.error(res.message || '加载失败');
+      message.error(res.message || intl.formatMessage({ id: 'approvals.message.loadFail' }));
     }
     setLoading(false);
   };
 
-  // 打开审批弹窗
   const openApprovalModal = (
     record: API.DetailedLecturerPendingWorkEntry,
     action: 'APPROVE' | 'REJECT'
@@ -45,7 +43,6 @@ const DetailedLecturerPendingApprovals: React.FC = () => {
     form.resetFields();
   };
 
-  // 提交审批
   const handleSubmitApproval = async () => {
     try {
       const values = await form.validateFields();
@@ -60,21 +57,26 @@ const DetailedLecturerPendingApprovals: React.FC = () => {
 
       if (res.success) {
         if (currentAction === 'APPROVE') {
-          message.success(values.comment ? `已通过，批注：${values.comment}` : '已通过');
+          message.success(
+            values.comment
+              ? intl.formatMessage({ id: 'approvals.message.success.approve' }, { comment: values.comment })
+              : intl.formatMessage({ id: 'approvals.message.success.approve.noComment' })
+          );
         } else {
-          message.success(`已驳回，原因：${values.comment}`);
+          message.success(
+            intl.formatMessage({ id: 'approvals.message.success.reject' }, { comment: values.comment })
+          );
         }
         setModalVisible(false);
         fetchData();
       } else {
-        message.error(res.message || '操作失败');
+        message.error(res.message || intl.formatMessage({ id: 'approvals.message.error' }));
       }
     } catch {
-      // 表单校验失败，不处理
+      // 表单校验失败
     }
   };
 
-  // 全局搜索
   const filteredEntries = entries.filter(
     (e) =>
       e.tutorName?.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -83,15 +85,15 @@ const DetailedLecturerPendingApprovals: React.FC = () => {
   );
 
   const columns: ColumnsType<API.DetailedLecturerPendingWorkEntry> = [
-    { title: '助教', dataIndex: 'tutorName', key: 'tutorName' },
-    { title: '课程', dataIndex: 'unitName', key: 'unitName' },
-    { title: '课程代码', dataIndex: 'unitCode', key: 'unitCode' },
-    { title: '周起始', dataIndex: 'weekStart', key: 'weekStart' },
-    { title: '类型', dataIndex: 'workType', key: 'workType' },
-    { title: '工时', dataIndex: 'hours', key: 'hours' },
-    { title: '描述', dataIndex: 'description', key: 'description' },
+    { title: intl.formatMessage({ id: 'approvals.col.tutor' }), dataIndex: 'tutorName', key: 'tutorName' },
+    { title: intl.formatMessage({ id: 'approvals.col.unit' }), dataIndex: 'unitName', key: 'unitName' },
+    { title: intl.formatMessage({ id: 'approvals.col.code' }), dataIndex: 'unitCode', key: 'unitCode' },
+    { title: intl.formatMessage({ id: 'approvals.col.weekStart' }), dataIndex: 'weekStart', key: 'weekStart' },
+    { title: intl.formatMessage({ id: 'approvals.col.type' }), dataIndex: 'workType', key: 'workType' },
+    { title: intl.formatMessage({ id: 'approvals.col.hours' }), dataIndex: 'hours', key: 'hours' },
+    { title: intl.formatMessage({ id: 'approvals.col.desc' }), dataIndex: 'description', key: 'description' },
     {
-      title: '状态',
+      title: intl.formatMessage({ id: 'approvals.col.status' }),
       dataIndex: 'status',
       key: 'status',
       render: (text: string) => {
@@ -107,41 +109,32 @@ const DetailedLecturerPendingApprovals: React.FC = () => {
       },
     },
     {
-      title: '操作',
+      title: intl.formatMessage({ id: 'approvals.col.action' }),
       key: 'actions',
       render: (_, record) => {
-        // ✅ 只有 SUBMITTED 的才显示操作
         if (record.status === 'SUBMITTED') {
           return (
             <Space>
-              <Button
-                type="primary"
-                size="small"
-                onClick={() => openApprovalModal(record, 'APPROVE')}
-              >
-                通过
+              <Button type="primary" size="small" onClick={() => openApprovalModal(record, 'APPROVE')}>
+                {intl.formatMessage({ id: 'approvals.action.approve' })}
               </Button>
-              <Button
-                danger
-                size="small"
-                onClick={() => openApprovalModal(record, 'REJECT')}
-              >
-                驳回
+              <Button danger size="small" onClick={() => openApprovalModal(record, 'REJECT')}>
+                {intl.formatMessage({ id: 'approvals.action.reject' })}
               </Button>
             </Space>
           );
         }
-        return <i>已处理</i>;
+        return <i>{intl.formatMessage({ id: 'approvals.action.processed' })}</i>;
       },
     },
   ];
 
   return (
     <div style={{ padding: 24 }}>
-      <h2>待审批工时记录</h2>
+      <h2>{intl.formatMessage({ id: 'approvals.header' })}</h2>
       <Space style={{ marginBottom: 16 }}>
         <Search
-          placeholder="搜索助教/课程/描述"
+          placeholder={intl.formatMessage({ id: 'approvals.searchPlaceholder' })}
           onSearch={(val) => setSearchText(val)}
           allowClear
           enterButton
@@ -156,14 +149,14 @@ const DetailedLecturerPendingApprovals: React.FC = () => {
         expandable={{
           expandedRowRender: (record: API.DetailedLecturerPendingWorkEntry) => (
             <Collapse ghost>
-              <Panel header="审批流详情" key="1">
+              <Panel header={intl.formatMessage({ id: 'approvals.flow.detail' })} key="1">
                 {record.approvalTasks && record.approvalTasks.length > 0 ? (
                   record.approvalTasks.map((task, idx) => (
                     <div key={idx} style={{ marginBottom: 8 }}>
                       <span style={{ marginRight: 8 }}>
                         {task.processTime
                           ? new Date(task.processTime).toLocaleString()
-                          : '未处理'}
+                          : intl.formatMessage({ id: 'approvals.flow.none' })}
                       </span>
                       <Tag color="purple">{task.step}</Tag>
                       <Tag
@@ -178,15 +171,17 @@ const DetailedLecturerPendingApprovals: React.FC = () => {
                         {task.action || 'PENDING'}
                       </Tag>
                       <span style={{ marginLeft: 8 }}>
-                        {task.actorName || '未处理人'}
+                        {task.actorName || intl.formatMessage({ id: 'approvals.flow.none' })}
                       </span>
                       {task.comment && (
-                        <span style={{ marginLeft: 8 }}>备注: {task.comment}</span>
+                        <span style={{ marginLeft: 8 }}>
+                          {intl.formatMessage({ id: 'approvals.modal.comment.approve' })}: {task.comment}
+                        </span>
                       )}
                     </div>
                   ))
                 ) : (
-                  <i>暂无审批记录</i>
+                  <i>{intl.formatMessage({ id: 'approvals.flow.none' })}</i>
                 )}
               </Panel>
             </Collapse>
@@ -194,22 +189,29 @@ const DetailedLecturerPendingApprovals: React.FC = () => {
         }}
       />
 
-      {/* 审批弹窗 */}
       <Modal
-        title={currentAction === 'APPROVE' ? '通过工时记录' : '驳回工时记录'}
+        title={
+          currentAction === 'APPROVE'
+            ? intl.formatMessage({ id: 'approvals.modal.approve' })
+            : intl.formatMessage({ id: 'approvals.modal.reject' })
+        }
         open={modalVisible}
         onOk={handleSubmitApproval}
         onCancel={() => setModalVisible(false)}
-        okText="确认"
-        cancelText="取消"
+        okText={intl.formatMessage({ id: 'approvals.modal.ok' })}
+        cancelText={intl.formatMessage({ id: 'approvals.modal.cancel' })}
       >
         <Form form={form} layout="vertical">
           <Form.Item
             name="comment"
-            label={currentAction === 'APPROVE' ? '通过批注' : '驳回原因'}
+            label={
+              currentAction === 'APPROVE'
+                ? intl.formatMessage({ id: 'approvals.modal.comment.approve' })
+                : intl.formatMessage({ id: 'approvals.modal.comment.reject' })
+            }
             rules={
               currentAction === 'REJECT'
-                ? [{ required: true, message: '请输入驳回原因' }]
+                ? [{ required: true, message: intl.formatMessage({ id: 'approvals.modal.comment.placeholder.reject' }) }]
                 : []
             }
           >
@@ -217,14 +219,13 @@ const DetailedLecturerPendingApprovals: React.FC = () => {
               rows={4}
               placeholder={
                 currentAction === 'APPROVE'
-                  ? '可填写通过批注（选填）'
-                  : '请输入驳回原因（必填）'
+                  ? intl.formatMessage({ id: 'approvals.modal.comment.placeholder.approve' })
+                  : intl.formatMessage({ id: 'approvals.modal.comment.placeholder.reject' })
               }
             />
           </Form.Item>
         </Form>
       </Modal>
-
     </div>
   );
 };
