@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card, Avatar, Modal, Table, Button } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { useIntl } from '@umijs/max';
 
 const { Meta } = Card;
 
@@ -18,17 +19,18 @@ function CourseCardsBase<T extends { id: number }>({
                                                      renderMeta,
                                                    }: Props<T>) {
   const [open, setOpen] = useState(false);
+  const intl = useIntl();
 
-  // 前 6 个课程
   const displayCourses = courses.slice(0, 6);
-  // 如果不足 6 个，补空位
   const emptySlots = Array.from({ length: 6 - displayCourses.length }, (_, i) => i);
 
   return (
     <>
       <Card
         title={title}
-        extra={<Button type="link" onClick={() => setOpen(true)}>全部课程</Button>}
+        extra={<Button type="link" onClick={() => setOpen(true)}>
+          {intl.formatMessage({ id: 'courseCards.modalTitle' })}
+        </Button>}
         style={{ marginBottom: 24 }}
       >
         {displayCourses.map((course) => (
@@ -47,7 +49,6 @@ function CourseCardsBase<T extends { id: number }>({
           </Card.Grid>
         ))}
 
-        {/* 补齐空位 */}
         {emptySlots.map((i) => (
           <Card.Grid
             key={`empty-${i}`}
@@ -61,14 +62,13 @@ function CourseCardsBase<T extends { id: number }>({
               color: '#999',
             }}
           >
-            空
+            {intl.formatMessage({ id: 'courseCards.empty' })}
           </Card.Grid>
         ))}
       </Card>
 
-      {/* 弹窗展示全部课程 */}
       <Modal
-        title="我被分配的所有课程"
+        title={intl.formatMessage({ id: 'courseCards.modalTitle' })}
         open={open}
         onCancel={() => setOpen(false)}
         footer={null}

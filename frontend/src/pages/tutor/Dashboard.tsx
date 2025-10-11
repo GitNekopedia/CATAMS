@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import { message } from 'antd';
+import {useEffect, useState} from 'react';
+import {message} from 'antd';
+import {useIntl} from '@umijs/max';
 import {getTutorCourses, getRecentEntries, getStats, submitWorkEntry} from '@/services/dashboard';
 import DashboardLayout from '@/components/common/DashboardLayout';
 import StatCards from '@/components/common/StatCards';
@@ -8,6 +9,7 @@ import CourseCardsTutor from "@/components/common/CourseCards/CourseCardsTutor";
 import ActivityTutor from "@/components/common/Activity/ActivityTutor";
 
 const TutorDashboard: React.FC = () => {
+  const intl = useIntl();
   const [courses, setCourses] = useState<API.TutorCourse[]>([]);
   const [entries, setEntries] = useState<API.WorkEntry[]>([]);
   const [stats, setStats] = useState<API.StatData>({
@@ -39,26 +41,30 @@ const TutorDashboard: React.FC = () => {
 
     } catch (err) {
       console.error(err);
-      message.error('加载数据失败');
+      message.error(intl.formatMessage({id: 'dashboard.loadFail'}));
     }
   };
 
   const handleCreate = async (payload: API.WorkEntrySubmitRequest) => {
     const res = await submitWorkEntry(payload);
     if (res.success) {
-      message.success('工时提交成功');
+      message.success(intl.formatMessage({id: 'activity.tutor.submitSuccess'}));
       fetchData(); // 刷新课程/entries/stats
     } else {
-      message.error(res.message || '提交失败');
+      message.error(res.message || intl.formatMessage({id: 'activity.tutor.submitFail'}));
     }
   };
 
   return (
     <DashboardLayout
-      topBanner={<TopBannerTutor courses={courses} />}
+      topBanner={
+        <div style={{marginBottom: 24}}>
+          <TopBannerTutor courses={courses}/>
+        </div>
+      }
       main={
         <>
-          <CourseCardsTutor courses={courses} />
+          <CourseCardsTutor courses={courses}/>
           <ActivityTutor
             entries={entries}
             tutorCourses={courses}
@@ -66,7 +72,7 @@ const TutorDashboard: React.FC = () => {
           />
         </>
       }
-      side={<StatCards stats={stats} />}
+      side={<StatCards stats={stats}/>}
     />
   );
 };

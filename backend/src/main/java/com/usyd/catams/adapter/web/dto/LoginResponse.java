@@ -2,6 +2,7 @@ package com.usyd.catams.adapter.web.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 public class LoginResponse {
@@ -9,6 +10,7 @@ public class LoginResponse {
     private UserDTO user;
 
     @AllArgsConstructor
+    @NoArgsConstructor
     @Data
     public static class UserDTO {
         private Long id;

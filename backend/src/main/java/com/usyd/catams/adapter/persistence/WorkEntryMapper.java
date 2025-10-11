@@ -15,6 +15,18 @@ import java.util.List;
 
 @Mapper
 public interface WorkEntryMapper extends BaseMapper<WorkEntry> {
+
+    @Select("""
+                SELECT ua.user_id
+                FROM work_entry we
+                JOIN unit_assignment ua On we.unit_id = ua.unit_id
+                WHERE
+                we.id = #{workEntryId}
+                AND
+                ua.role = 'LECTURER'
+            """)
+    List<Long> findLecturerIdByWorkEntryId(@Param("workEntryId") Long workEntryId);
+
     @Select("""
                 SELECT * FROM work_entry
                 WHERE tutor_id = #{tutorId}

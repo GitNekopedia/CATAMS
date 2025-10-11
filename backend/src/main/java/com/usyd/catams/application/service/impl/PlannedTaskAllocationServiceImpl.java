@@ -3,10 +3,12 @@ package com.usyd.catams.application.service.impl;
 import com.usyd.catams.adapter.persistence.CourseUnitMapper;
 import com.usyd.catams.adapter.web.dto.AllocationResponse;
 import com.usyd.catams.adapter.web.dto.WeekHoursDTO;
+import com.usyd.catams.application.service.NotificationService;
 import com.usyd.catams.application.service.PlannedTaskAllocationService;
 import com.usyd.catams.adapter.persistence.PlannedTaskAllocationMapper;
 import com.usyd.catams.domain.model.PlannedTaskAllocationRecord;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -18,11 +20,14 @@ public class PlannedTaskAllocationServiceImpl implements PlannedTaskAllocationSe
 
     private final PlannedTaskAllocationMapper plannedTaskAllocationMapper;
     private final CourseUnitMapper courseUnitMapper;
+    private final NotificationService notificationService;
 
     public PlannedTaskAllocationServiceImpl(PlannedTaskAllocationMapper plannedTaskAllocationMapper,
-                                            CourseUnitMapper courseUnitMapper) {
+                                            CourseUnitMapper courseUnitMapper,
+                                            NotificationService notificationService) {
         this.plannedTaskAllocationMapper = plannedTaskAllocationMapper;
         this.courseUnitMapper = courseUnitMapper;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -30,6 +35,7 @@ public class PlannedTaskAllocationServiceImpl implements PlannedTaskAllocationSe
         return plannedTaskAllocationMapper.findByUnitId(unitId);
     }
 
+    @Transactional
     @Override
     public void saveTutorAllocations(Long unitId, Long tutorId,
                                      List<WeekHoursDTO> allocations,
@@ -69,16 +75,24 @@ public class PlannedTaskAllocationServiceImpl implements PlannedTaskAllocationSe
         if (!records.isEmpty()) {
             plannedTaskAllocationMapper.batchUpsert(records);
         }
+
+        // 发布事件（触发异步通知）
+        notificationService.publishTaskAllocation(createdBy, tutorId, records.size());
+
     }
 
+    @Transactional
     @Override
     public void updateAllocationHours(Long id, double plannedHours, Long updatedBy) {
         plannedTaskAllocationMapper.updateHours(id, plannedHours, updatedBy);
+        notificationService.publishTaskUpdated(id, plannedHours, updatedBy);
     }
 
+    @Transactional
     @Override
     public void deleteByTutorAndTask(Long tutorId, Long taskId) {
         plannedTaskAllocationMapper.deleteByTutorAndTask(tutorId, taskId);
+        notificationService.publishTaskDeleted(tutorId, taskId);
     }
 
 }

@@ -3,6 +3,7 @@ package com.usyd.catams.application.command;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.usyd.catams.adapter.persistence.*;
 import com.usyd.catams.adapter.web.dto.WorkEntrySubmitRequest;
+import com.usyd.catams.application.service.NotificationService;
 import com.usyd.catams.domain.enums.Action;
 import com.usyd.catams.domain.enums.ApprovalStep;
 import com.usyd.catams.domain.enums.WorkSource;
@@ -31,6 +32,7 @@ public class SubmitWorkEntryHandler {
     private final CourseMetaCache courseMetaCache;
     private final TaskMapper taskMapper;
     private final UserMapper userMapper;
+    private final NotificationService notificationService;
 
     public SubmitWorkEntryHandler(WorkEntryMapper workEntryMapper,
                                   ApprovalTaskMapper approvalTaskMapper,
@@ -39,7 +41,8 @@ public class SubmitWorkEntryHandler {
                                   RedisWorkEntryCache weCache,
                                   CourseMetaCache courseMetaCache,
                                   TaskMapper taskMapper,
-                                  UserMapper userMapper) {
+                                  UserMapper userMapper,
+                                  NotificationService notificationService) {
         this.workEntryMapper = workEntryMapper;
         this.approvalTaskMapper = approvalTaskMapper;
         this.unitAssignmentMapper = unitAssignmentMapper;
@@ -48,6 +51,7 @@ public class SubmitWorkEntryHandler {
         this.courseMetaCache = courseMetaCache;
         this.taskMapper = taskMapper;
         this.userMapper = userMapper;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -121,6 +125,8 @@ public class SubmitWorkEntryHandler {
         String name = userMapper.findNameById(submitterId);
         task.setActorName(name);
         approvalTaskMapper.insert(task);
+
+        notificationService.publishWorkEntrySubmitted(submitterId, entry.getId(), taskId);
 
         return entry.getId();
 

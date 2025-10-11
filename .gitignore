@@ -23,6 +23,7 @@ frontend/*.iml
 # ==========================
 mysql_data/
 redis_data/
+rabbitmq_data/
 
 # ==========================
 # System / IDE files

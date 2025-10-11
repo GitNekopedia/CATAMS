@@ -13,17 +13,21 @@ import {
   Modal,
   Form,
 } from "antd";
-import {PlusOutlined, DeleteOutlined, SaveOutlined} from "@ant-design/icons";
+import { PlusOutlined, DeleteOutlined, SaveOutlined } from "@ant-design/icons";
+import { useIntl } from "@umijs/max";
 import { getLecturerCourses, getTutorsOfCourse } from "@/services/dashboard";
+import AllocationsTable from "@/components/common/AllocationsTable";
 import {
   getTaskTypes,
   createTaskType,
   deleteTaskType,
   getTasks,
   createTask,
-  deleteTask, saveTutorAllocations, getAllocations, deleteAllocationsByTask,
+  deleteTask,
+  saveTutorAllocations,
+  getAllocations,
+  deleteAllocationsByTask,
 } from "@/services/task";
-
 
 const { Option } = Select;
 const { TabPane } = Tabs;
@@ -32,65 +36,52 @@ const { Text } = Typography;
 const weeks = Array.from({ length: 12 }, (_, i) => `Week${i + 1}`);
 
 const UnitAllocations: React.FC = () => {
+  const intl = useIntl();
 
-  // 新增状态
   const [allocations, setAllocations] = useState<Record<number, API.AllocationRow[]>>({});
-  // key: tutorId, value: 该 tutor 的分配行数组
-
   const [allocModalOpen, setAllocModalOpen] = useState(false);
   const [allocForm] = Form.useForm();
   const [currentTutor, setCurrentTutor] = useState<number | null>(null);
-
 
   const [units, setUnits] = useState<API.LecturerCourse[]>([]);
   const [selectedUnit, setSelectedUnit] = useState<number | null>(null);
   const [tutors, setTutors] = useState<API.TutorOfCourseDTO[]>([]);
 
-  // 后端 TaskType / Task
   const [taskTypes, setTaskTypes] = useState<API.TaskTypeDTO[]>([]);
   const [tasks, setTasks] = useState<API.TaskDTO[]>([]);
 
-  // 弹窗表单
   const [typeModalOpen, setTypeModalOpen] = useState(false);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [typeForm] = Form.useForm();
   const [taskForm] = Form.useForm();
 
-  // 获取 lecturer 的课程
   useEffect(() => {
     getLecturerCourses().then((res) => {
       if (res.success) {
         setUnits(res.data || []);
       } else {
-        message.error(res.message || "加载课程失败");
+        message.error(res.message || intl.formatMessage({ id: "unitAlloc.message.loadUnitFail" }));
       }
     });
   }, []);
 
-  // 当选择课程时，获取 tutor / taskTypes / tasks
   useEffect(() => {
     if (selectedUnit) {
       getTutorsOfCourse(selectedUnit).then((res) => {
         if (res.success) setTutors(res.data || []);
-        else message.error(res.message || "加载导师失败");
+        else message.error(res.message || intl.formatMessage({ id: "unitAlloc.message.loadTutorFail" }));
       });
 
-      getTaskTypes(selectedUnit).then((res) =>
-        setTaskTypes(res.success ? res.data || [] : [])
-      );
-      getTasks(selectedUnit).then((res) =>
-        setTasks(res.success ? res.data || [] : [])
-      );
-      // 新增：加载 allocations
+      getTaskTypes(selectedUnit).then((res) => setTaskTypes(res.success ? res.data || [] : []));
+      getTasks(selectedUnit).then((res) => setTasks(res.success ? res.data || [] : []));
       getAllocations(selectedUnit).then((res) => {
         if (res.success) {
           const grouped: Record<number, API.AllocationRow[]> = {};
           res.data.forEach((a) => {
             const weekKey = toWeekKey(a.weekStart, res.data);
-            // 写个小函数把 weekStart 映射成 Week1/Week2/...
             if (!grouped[a.tutorId]) grouped[a.tutorId] = [];
 
-            let row = grouped[a.tutorId].find(r => r.taskId === a.taskId);
+            let row = grouped[a.tutorId].find((r) => r.taskId === a.taskId);
             if (!row) {
               row = {
                 key: `${a.tutorId}-${a.taskId}`,
@@ -98,7 +89,7 @@ const UnitAllocations: React.FC = () => {
                 taskId: a.taskId,
                 taskName: a.taskName,
                 typeName: a.typeName,
-                weekHours: Object.fromEntries(weeks.map(w => [w, 0])),
+                weekHours: Object.fromEntries(weeks.map((w) => [w, 0])),
               };
               grouped[a.tutorId].push(row);
             }
@@ -110,16 +101,13 @@ const UnitAllocations: React.FC = () => {
     }
   }, [selectedUnit]);
 
-
   function toWeekKey(weekStart: string, all: API.AllocationResponse[]): string {
-    // 找到最早的 weekStart 当 Week1
-    const allDates = all.map(a => new Date(a.weekStart).getTime());
+    const allDates = all.map((a) => new Date(a.weekStart).getTime());
     const min = Math.min(...allDates);
     const diffWeeks = Math.floor((new Date(weekStart).getTime() - min) / (7 * 24 * 3600 * 1000));
     return `Week${diffWeeks + 1}`;
   }
 
-  // 保存函数
   const onSaveTutorAllocations = async (tutorId: number) => {
     const rows = allocations[tutorId] || [];
     const payload: API.SaveTutorAllocationsRequest = {
@@ -134,19 +122,18 @@ const UnitAllocations: React.FC = () => {
     try {
       const res = await saveTutorAllocations(payload);
       if (res.success) {
-        message.success("保存成功");
+        message.success(intl.formatMessage({ id: "unitAlloc.message.saveSuccess" }));
       } else {
-        message.error(res.message || "保存失败");
+        message.error(res.message || intl.formatMessage({ id: "unitAlloc.message.saveFail" }));
       }
     } catch (e) {
-      message.error("请求失败，请检查后端接口");
+      message.error(intl.formatMessage({ id: "unitAlloc.message.requestFail" }));
     }
   };
 
-  // 新增分配
   const onAddAllocation = async () => {
     const { taskId } = await allocForm.validateFields();
-    const task = tasks.find(t => t.id === taskId);
+    const task = tasks.find((t) => t.id === taskId);
     if (!task || currentTutor === null) return;
 
     const newRow: API.AllocationRow = {
@@ -155,10 +142,10 @@ const UnitAllocations: React.FC = () => {
       taskId: task.id,
       taskName: task.name,
       typeName: typeMap[task.typeId] || "Uncategorised",
-      weekHours: Object.fromEntries(weeks.map(w => [w, 0])),
+      weekHours: Object.fromEntries(weeks.map((w) => [w, 0])),
     };
 
-    setAllocations(prev => ({
+    setAllocations((prev) => ({
       ...prev,
       [currentTutor]: [...(prev[currentTutor] || []), newRow],
     }));
@@ -166,38 +153,43 @@ const UnitAllocations: React.FC = () => {
     setAllocModalOpen(false);
   };
 
-  const typeMap = useMemo(
-    () =>
-      taskTypes.reduce<Record<number, string>>(
-        (m, t) => ((m[t.id] = t.name), m),
-        {}
+  const handleWeekChange = (tutorId: number, taskId: number, week: string, value: number) => {
+    setAllocations((prev) => ({
+      ...prev,
+      [tutorId]: (prev[tutorId] || []).map((r) =>
+        r.taskId === taskId
+          ? { ...r, weekHours: { ...r.weekHours, [week]: value } }
+          : r
       ),
+    }));
+  };
+
+
+  const typeMap = useMemo(
+    () => taskTypes.reduce<Record<number, string>>((m, t) => ((m[t.id] = t.name), m), {}),
     [taskTypes]
   );
 
-  // ========== TaskTypes 表格 ==========
   const typeColumns = [
-    { title: "Type Name", dataIndex: "name" },
+    { title: intl.formatMessage({ id: "unitAlloc.taskTypes" }), dataIndex: "name" },
     {
-      title: "Action",
+      title: intl.formatMessage({ id: "approvals.col.action" }),
       width: 100,
       render: (_: any, record: API.TaskTypeDTO) => (
         <Popconfirm
-          title="Delete this type?"
+          title={intl.formatMessage({ id: "unitAlloc.message.taskTypeUsed" })}
           onConfirm={() => {
             const used = tasks.some((t) => t.typeId === record.id);
             if (used) {
-              message.warning("该类型已被任务使用，无法删除");
+              message.warning(intl.formatMessage({ id: "unitAlloc.message.taskTypeUsed" }));
               return;
             }
             deleteTaskType(record.id).then((res) => {
               if (res.success) {
-                message.success("已删除");
-                getTaskTypes(selectedUnit!).then((r) =>
-                  setTaskTypes(r.data || [])
-                );
+                message.success(intl.formatMessage({ id: "unitAlloc.message.deleted" }));
+                getTaskTypes(selectedUnit!).then((r) => setTaskTypes(r.data || []));
               } else {
-                message.error(res.message);
+                message.error(res.message || intl.formatMessage({ id: "unitAlloc.message.deleteFail" }));
               }
             });
           }}
@@ -210,7 +202,7 @@ const UnitAllocations: React.FC = () => {
 
   const typeTableTitle = (
     <div style={{ display: "flex", justifyContent: "space-between" }}>
-      <Text strong>Task Types</Text>
+      <Text strong>{intl.formatMessage({ id: "unitAlloc.taskTypes" })}</Text>
       <Button
         type="primary"
         icon={<PlusOutlined />}
@@ -219,33 +211,32 @@ const UnitAllocations: React.FC = () => {
           setTypeModalOpen(true);
         }}
       >
-        Add Type
+        {intl.formatMessage({ id: "unitAlloc.addType" })}
       </Button>
     </div>
   );
 
-  // ========== Tasks 表格 ==========
   const taskColumns = [
-    { title: "Task Name", dataIndex: "name" },
+    { title: intl.formatMessage({ id: "unitAlloc.unitTasks" }), dataIndex: "name" },
     {
-      title: "Type",
+      title: intl.formatMessage({ id: "unitAlloc.taskTypes" }),
       dataIndex: "typeId",
       render: (id: number) => typeMap[id] || "-",
       width: 220,
     },
     {
-      title: "Action",
+      title: intl.formatMessage({ id: "approvals.col.action" }),
       width: 100,
       render: (_: any, record: API.TaskDTO) => (
         <Popconfirm
-          title="Delete this task?"
+          title={intl.formatMessage({ id: "unitAlloc.message.deleteFail" })}
           onConfirm={() => {
             deleteTask(record.id).then((res) => {
               if (res.success) {
-                message.success("已删除");
+                message.success(intl.formatMessage({ id: "unitAlloc.message.deleted" }));
                 getTasks(selectedUnit!).then((r) => setTasks(r.data || []));
               } else {
-                message.error(res.message);
+                message.error(res.message || intl.formatMessage({ id: "unitAlloc.message.deleteFail" }));
               }
             });
           }}
@@ -258,143 +249,93 @@ const UnitAllocations: React.FC = () => {
 
   const taskTableTitle = (
     <div style={{ display: "flex", justifyContent: "space-between" }}>
-      <Text strong>Unit Tasks</Text>
+      <Text strong>{intl.formatMessage({ id: "unitAlloc.unitTasks" })}</Text>
       <Button
         type="primary"
         icon={<PlusOutlined />}
         onClick={() => {
           taskForm.resetFields();
           if (taskTypes.length === 0) {
-            message.info("请先添加一个 Task Type");
+            message.info(intl.formatMessage({ id: "unitAlloc.message.addSuccess" }));
             setTypeModalOpen(true);
             return;
           }
           setTaskModalOpen(true);
         }}
       >
-        Add Task
+        {intl.formatMessage({ id: "unitAlloc.addTask" })}
       </Button>
     </div>
   );
 
-  // ========== Tutor Allocation 表格 ==========
-  const allocationColumns = [
-    {
-      title: "Task",
-      dataIndex: "taskName",
-      fixed: "left",
-      width: 260,
-      render: (_: any, row: API.AllocationRow) =>
-        `[${row.typeName}] ${row.taskName}`,
-    },
-    ...weeks.map((week) => ({
-      title: week,
-      dataIndex: ["weekHours", week],
-      render: (_: any, row: API.AllocationRow) => (
-        <Input
-          type="number"
-          min={0}
-          style={{ width: 60 }}
-          value={row.weekHours[week]}
-          onChange={(e) => {
-            const val = Number(e.target.value);
-            setAllocations((prev) => ({
-              ...prev,
-              [row.key.split("-")[0]]: (prev[Number(row.key.split("-")[0])] || []).map(
-                (r) =>
-                  r.key === row.key
-                    ? { ...r, weekHours: { ...r.weekHours, [week]: val } }
-                    : r
-              ),
-            }));
-          }}
-        />
-      ),
-    })),
-    {
-      title: "Action",
-      width: 100,
-      fixed: "right",
-      render: (_: any, record: API.AllocationRow) => (
-        <Popconfirm
-          title="Delete this allocation?"
-          onConfirm={async () => {
-            const res = await deleteAllocationsByTask(
-              Number(record.key.split("-")[0]), // tutorId
-              record.taskId
-            );
-            if (res.success) {
-              message.success("Deleted");
-              setAllocations((prev) => {
-                const updated = { ...prev };
-                updated[record.tutorId] = updated[record.tutorId].filter((r) => r.taskId !== record.taskId);
-                return updated;
-              });
-            } else {
-              message.error(res.message || "删除失败");
-            }
-          }}
-        >
-          <Button icon={<DeleteOutlined />} danger size="small" />
-        </Popconfirm>
-      ),
-    }
-  ];
 
-  const tutorTables = tutors.map((tutor) => {
+  const tutorTables = tutors.map((tutor) => (
+    <Card
+      key={tutor.id}
+      title={tutor.name}
+      style={{ marginBottom: 24 }}
+      bordered
+      extra={
+        <Space>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            size="small"
+            onClick={() => {
+              setCurrentTutor(tutor.id);
+              allocForm.resetFields();
+              setAllocModalOpen(true);
+            }}
+          >
+            {intl.formatMessage({ id: "unitAlloc.addAllocation" })}
+          </Button>
+          <Button
+            type="primary"
+            size="small"
+            icon={<SaveOutlined />}
+            onClick={() => onSaveTutorAllocations(tutor.id)}
+          >
+            {intl.formatMessage({ id: "unitAlloc.saveAllocations" })}
+          </Button>
+        </Space>
+      }
+    >
+      <AllocationsTable
+        editable
+        data={(allocations[tutor.id] || []).map((row) => ({
+          id: row.taskId, // 通用组件要求 key 是 id
+          taskId: row.taskId,
+          typeName: row.typeName,
+          taskName: row.taskName,
+          weekHours: row.weekHours,
+        }))}
+        onChange={(taskId, week, val) => handleWeekChange(tutor.id, taskId, week, val)}
+        onDelete={async (record) => {
+          const res = await deleteAllocationsByTask(tutor.id, record.taskId);
+          if (res.success) {
+            message.success(intl.formatMessage({ id: "unitAlloc.message.deleted" }));
+            setAllocations((prev) => {
+              const updated = { ...prev };
+              updated[tutor.id] = updated[tutor.id].filter((r) => r.taskId !== record.taskId);
+              return updated;
+            });
+          } else {
+            message.error(res.message || intl.formatMessage({ id: "unitAlloc.message.deleteFail" }));
+          }
+        }}
+      />
+    </Card>
+  ));
 
-    return (
-      <Card
-        key={tutor.id}
-        title={tutor.name}
-        style={{ marginBottom: 24 }}
-        bordered
-        extra={
-          <Space>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              size="small"
-              onClick={() => {
-                setCurrentTutor(tutor.id);
-                allocForm.resetFields();
-                setAllocModalOpen(true);
-              }}
-            >
-              Add Allocation
-            </Button>
-            <Button
-              type="primary"
-              size="small"
-              icon={<SaveOutlined />}
-              onClick={() => onSaveTutorAllocations(tutor.id)}
-            >
-              Save Allocations
-            </Button>
-          </Space>
-        }
-      >
-        <Table
-          columns={allocationColumns}
-          dataSource={allocations[tutor.id] || []}
-          pagination={false}
-          rowKey="key"
-          scroll={{ x: 1500 }}
-        />
-      </Card>
-    );
-  });
-
-  // ========== 新增 TaskType/Task ==========
   const onCreateType = async () => {
     const { name } = await typeForm.validateFields();
     const res = await createTaskType({ unitId: selectedUnit!, name: name.trim() });
     if (res.success) {
-      message.success("添加成功");
+      message.success(intl.formatMessage({ id: "unitAlloc.message.addSuccess" }));
       getTaskTypes(selectedUnit!).then((r) => setTaskTypes(r.data || []));
       setTypeModalOpen(false);
     } else {
-      message.error(res.message);
+      message.error(res.message || intl.formatMessage({ id: "unitAlloc.message.deleteFail" }));
     }
   };
 
@@ -406,21 +347,20 @@ const UnitAllocations: React.FC = () => {
       name: name.trim(),
     });
     if (res.success) {
-      message.success("任务已创建");
+      message.success(intl.formatMessage({ id: "unitAlloc.message.taskCreated" }));
       getTasks(selectedUnit!).then((r) => setTasks(r.data || []));
       setTaskModalOpen(false);
     } else {
-      message.error(res.message);
+      message.error(res.message || intl.formatMessage({ id: "unitAlloc.message.deleteFail" }));
     }
   };
 
   return (
     <div>
-      {/* 选择课程 */}
-      <Card title="Select Unit" style={{ marginBottom: 24 }}>
+      <Card title={intl.formatMessage({ id: "unitAlloc.selectUnit" })} style={{ marginBottom: 24 }}>
         <Select
           style={{ width: 400 }}
-          placeholder="Choose a Unit"
+          placeholder={intl.formatMessage({ id: "unitAlloc.chooseUnit" })}
           onChange={(v) => setSelectedUnit(v)}
           value={selectedUnit ?? undefined}
         >
@@ -434,8 +374,7 @@ const UnitAllocations: React.FC = () => {
 
       {selectedUnit && (
         <Tabs defaultActiveKey="1">
-          {/* Tab1：任务与类型管理 */}
-          <TabPane tab="Edit Unit Tasks" key="1">
+          <TabPane tab={intl.formatMessage({ id: "unitAlloc.editTasks" })} key="1">
             <Card
               title={
                 <Text strong>
@@ -462,8 +401,7 @@ const UnitAllocations: React.FC = () => {
             </Card>
           </TabPane>
 
-          {/* Tab2：分配 */}
-          <TabPane tab="Tutor Allocations" key="2">
+          <TabPane tab={intl.formatMessage({ id: "unitAlloc.allocations" })} key="2">
             <Card
               title={
                 <Text strong>
@@ -480,7 +418,7 @@ const UnitAllocations: React.FC = () => {
 
       {/* 新增类型弹窗 */}
       <Modal
-        title="Add Task Type"
+        title={intl.formatMessage({ id: "unitAlloc.addType" })}
         open={typeModalOpen}
         onOk={onCreateType}
         onCancel={() => setTypeModalOpen(false)}
@@ -489,8 +427,8 @@ const UnitAllocations: React.FC = () => {
         <Form form={typeForm} layout="vertical">
           <Form.Item
             name="name"
-            label="Type Name"
-            rules={[{ required: true, message: "Please input type name" }]}
+            label={intl.formatMessage({ id: "unitAlloc.taskTypes" })}
+            rules={[{ required: true, message: intl.formatMessage({ id: "unitAlloc.message.addSuccess" }) }]}
           >
             <Input placeholder="e.g. Tutorial / Lab / Marking" />
           </Form.Item>
@@ -499,7 +437,7 @@ const UnitAllocations: React.FC = () => {
 
       {/* 新增任务弹窗 */}
       <Modal
-        title="Add Task"
+        title={intl.formatMessage({ id: "unitAlloc.addTask" })}
         open={taskModalOpen}
         onOk={onCreateTask}
         onCancel={() => setTaskModalOpen(false)}
@@ -508,17 +446,17 @@ const UnitAllocations: React.FC = () => {
         <Form form={taskForm} layout="vertical">
           <Form.Item
             name="name"
-            label="Task Name"
-            rules={[{ required: true, message: "Please input task name" }]}
+            label={intl.formatMessage({ id: "unitAlloc.unitTasks" })}
+            rules={[{ required: true, message: intl.formatMessage({ id: "unitAlloc.message.addSuccess" }) }]}
           >
             <Input placeholder="e.g. Tutorial 3 Fri 1-3" />
           </Form.Item>
           <Form.Item
             name="typeId"
-            label="Type"
-            rules={[{ required: true, message: "Please select a type" }]}
+            label={intl.formatMessage({ id: "unitAlloc.taskTypes" })}
+            rules={[{ required: true, message: intl.formatMessage({ id: "unitAlloc.message.taskTypeUsed" }) }]}
           >
-            <Select placeholder="Select a type">
+            <Select placeholder={intl.formatMessage({ id: "unitAlloc.taskTypes" })}>
               {taskTypes.map((t) => (
                 <Option key={t.id} value={t.id}>
                   {t.name}
@@ -528,8 +466,9 @@ const UnitAllocations: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
+
       <Modal
-        title="Add Allocation"
+        title={intl.formatMessage({ id: "unitAlloc.addAllocation" })}
         open={allocModalOpen}
         onOk={onAddAllocation}
         onCancel={() => setAllocModalOpen(false)}
@@ -538,11 +477,11 @@ const UnitAllocations: React.FC = () => {
         <Form form={allocForm} layout="vertical">
           <Form.Item
             name="taskId"
-            label="Select Task"
-            rules={[{ required: true, message: "Please select a task" }]}
+            label={intl.formatMessage({ id: "unitAlloc.unitTasks" })}
+            rules={[{ required: true, message: intl.formatMessage({ id: "unitAlloc.message.addSuccess" }) }]}
           >
-            <Select placeholder="Choose a task">
-              {tasks.filter(t => t.isActive).map((t) => (
+            <Select placeholder={intl.formatMessage({ id: "unitAlloc.unitTasks" })}>
+              {tasks.filter((t) => t.isActive).map((t) => (
                 <Option key={t.id} value={t.id}>
                   [{typeMap[t.typeId] || "Uncategorised"}] {t.name}
                 </Option>

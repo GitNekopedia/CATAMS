@@ -11,15 +11,15 @@ const Footer: React.FC = () => {
       copyright="Powered by Ant Desgin"
       links={[
         {
-          key: 'Ant Design Pro',
-          title: 'Ant Design Pro',
-          href: 'https://pro.ant.design',
+          key: 'The University Of Sydney',
+          title: 'The University Of Sydney',
+          href: 'https://www.sydney.edu.au/',
           blankTarget: true,
         },
         {
           key: 'github',
           title: <GithubOutlined />,
-          href: 'https://github.com/ant-design/ant-design-pro',
+          href: 'https://github.com/GitNekopedia/CATAMS',
           blankTarget: true,
         },
         {
@@ -28,7 +28,9 @@ const Footer: React.FC = () => {
           href: 'https://ant.design',
           blankTarget: true,
         },
+
       ]}
+
     />
   );
 };
