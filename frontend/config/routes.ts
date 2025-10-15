@@ -12,7 +12,24 @@
  */
 export default [
 
-
+  {
+    path: '/hr/dashboard',
+    name: 'HR Dashboard',
+    component: './tutor/Dashboard',
+    access: 'canHR'
+  },
+  {
+    path: '/hr/user-management',
+    name: 'User Management',
+    component: './hr/UserManagement',
+    access: 'canHR'
+  },
+  {
+    path: '/hr/work-entries',
+    name: 'My WorkEntries',
+    component: './tutor/DetailedTutorWorkEntries',
+    access: 'canHR'
+  },
   {
     path: '/tutor/dashboard',
     name: 'Tutor Dashboard',

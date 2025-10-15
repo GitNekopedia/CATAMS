@@ -2,9 +2,7 @@ package com.usyd.catams.adapter.persistence;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.usyd.catams.domain.model.UserEntity;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
@@ -29,5 +27,22 @@ public interface UserMapper extends BaseMapper<UserEntity> {
     List<String> findEmailsByIds(@Param("ids") List<Long> ids);
     @Select("SELECT email FROM user WHERE id = #{id}")
     String findEmailById(Long id);
+
+    @Select("""
+        SELECT * FROM user
+        WHERE (#{role} IS NULL OR role = #{role})
+          AND (#{keyword} IS NULL OR name LIKE CONCAT('%', #{keyword}, '%') OR email LIKE CONCAT('%', #{keyword}, '%'))
+        ORDER BY created_at DESC
+    """)
+    List<UserEntity> selectByCondition(@Param("role") String role, @Param("keyword") String keyword);
+
+    @Select("SELECT * FROM user ORDER BY id")
+    List<UserEntity> selectAll();
+
+    @Update("UPDATE user SET name=#{name}, email=#{email}, role=#{role} WHERE id=#{id}")
+    void update(UserEntity entity);
+
+    @Delete("DELETE FROM user WHERE id=#{id}")
+    void delete(Long id);
 
 }
