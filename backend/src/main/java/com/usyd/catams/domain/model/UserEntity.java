@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Data
 @TableName("user")
 public class UserEntity {
@@ -13,6 +15,8 @@ public class UserEntity {
     private String name;
     private String email;
     private String role; // Lecturer / Tutor / HR / Admin
+    private LocalDateTime createdAt;
+    private LocalDateTime  updatedAt;
 
     public String getPassword() {
         return name;
