@@ -119,6 +119,6 @@ public interface PlannedTaskAllocationMapper {
     );
 
 
-    @Select("SELECT pay_rate FROM planned_task_allocation WHERE task_id = #{taskId}")
+    @Select("SELECT pay_rate FROM planned_task_allocation WHERE task_id = #{taskId} LIMIT 1")
     BigDecimal getPayRateByTaskId(Long taskId);
 }
