@@ -5,6 +5,11 @@ set -e
 PROJECT_NAME=catams
 DOCKER_USER=dockernekopedia
 
+echo "🧱 使用本地 Maven 构建 backend..."
+cd backend
+mvn clean package -DskipTests
+cd ..
+
 # 构建 backend 镜像
 echo "🚀 构建 backend 镜像..."
 docker build -t $DOCKER_USER/$PROJECT_NAME-backend:latest ./backend
