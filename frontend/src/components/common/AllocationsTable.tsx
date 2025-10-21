@@ -10,6 +10,8 @@ export interface AllocationRow {
   taskId: number;
   typeName: string;
   taskName: string;
+  payCategory?: string;   // 👈 新增：PHD / Non-PhD
+  payRate?: number;       // 👈 新增：对应的时薪
   weekHours: WeekHours;
 }
 
@@ -31,6 +33,20 @@ const AllocationsTable: React.FC<Props> = ({ editable = false, data, onChange, o
       fixed: "left",
       width: 260,
       render: (_: any, row: AllocationRow) => `[${row.typeName}] ${row.taskName}`,
+    },
+    // 👇 新增 PayRate 列
+    {
+      title: intl.formatMessage({
+        id: "unitAlloc.payRate",
+        defaultMessage: "Pay Rate",
+      }),
+      dataIndex: "payRate",
+      width: 120,
+      align: "center",
+      render: (_: any, row: AllocationRow) =>
+        row.payRate
+          ? `[${row.payCategory ?? "N/A"}] ${row.payRate}`
+          : "-",
     },
     ...weeks.map((week) => ({
       title: week,

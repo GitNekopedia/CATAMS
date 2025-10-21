@@ -8,8 +8,8 @@ import java.util.List;
 @Mapper
 public interface TaskTypeMapper {
 
-    @Insert("INSERT INTO unit_task_type(unit_id, name, created_at, updated_at) " +
-            "VALUES(#{unitId}, #{name}, NOW(), NOW())")
+    @Insert("INSERT INTO unit_task_type(unit_id, name, phd_pay_rate, non_phd_pay_rate, created_at, updated_at) " +
+            "VALUES(#{unitId}, #{name}, #{phdPayRate}, #{nonPhdPayRate}, NOW(), NOW())")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(UnitTaskType taskType);
 

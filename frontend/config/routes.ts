@@ -25,9 +25,21 @@ export default [
     access: 'canHR'
   },
   {
+    path: '/hr/course-management',
+    name: 'Course Management',
+    component: './hr/CourseManagement',
+    access: 'canHR'
+  },
+  {
+    path: '/hr/unit-assignment',
+    name: 'Unit Assignment',
+    component: './hr/UnitAssignment',
+    access: 'canHR'
+  },
+  {
     path: '/hr/work-entries',
     name: 'My WorkEntries',
-    component: './tutor/DetailedTutorWorkEntries',
+    component: './hr/DetailedHRWorkEntries',
     access: 'canHR'
   },
   {

@@ -16,7 +16,12 @@ public interface TaskMapper {
     @Select("SELECT * FROM unit_task WHERE id = #{id}")
     UnitTask findById(Long id);
 
-    @Select("SELECT * FROM unit_task WHERE unit_id = #{unitId}")
+    @Select("""
+            SELECT ut.*, utt.phd_pay_rate, utt.non_phd_pay_rate
+            FROM unit_task ut
+            JOIN unit_task_type utt ON ut.type_id = utt.id
+            WHERE ut.unit_id = #{unitId}
+            """)
     List<UnitTask> findByUnitId(Long unitId);
 
     @Update("UPDATE unit_task SET name = #{name}, type_id = #{typeId}, updated_at = NOW() WHERE id = #{id}")

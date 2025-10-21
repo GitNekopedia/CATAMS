@@ -206,4 +206,27 @@ public interface WorkEntryMapper extends BaseMapper<WorkEntry> {
               AND version = #{version}
             """)
     int updateStatusWithVersion(@Param("entryId") Long entryId, @Param("status") String status, @Param("version") int version);
+
+    @Select("""
+    SELECT 
+        w.id AS workEntryId,
+        w.tutor_id AS tutorId,
+        u.name AS tutorName,
+        w.unit_id AS unitId,
+        c.code AS unitCode,
+        c.name AS unitName,
+        c.semester,
+        w.week_start AS weekStart,
+        w.work_type AS workType,
+        w.hours,
+        w.description,
+        w.status,
+        w.created_at AS createdAt,
+        w.updated_at AS updatedAt
+    FROM work_entry w
+    JOIN course_unit c ON w.unit_id = c.id
+    JOIN user u ON w.tutor_id = u.id
+    ORDER BY w.created_at DESC
+""")
+    List<LecturerPendingWorkEntryDTO> findAllWorkEntries();
 }

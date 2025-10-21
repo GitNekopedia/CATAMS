@@ -2,6 +2,7 @@ package com.usyd.catams.domain.model;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Data
@@ -11,6 +12,8 @@ public class PlannedTaskAllocationRecord {
     private Long tutorId;
     private LocalDate weekStart;
     private Double plannedHours;
+    private String payCategory;
+    private BigDecimal payRate;
     private String note;
     private Long createdBy;
 }

@@ -11,7 +11,7 @@ import {
   Typography,
   message,
   Modal,
-  Form,
+  Form, InputNumber,
 } from "antd";
 import { PlusOutlined, DeleteOutlined, SaveOutlined } from "@ant-design/icons";
 import { useIntl } from "@umijs/max";
@@ -90,6 +90,8 @@ const UnitAllocations: React.FC = () => {
                 taskName: a.taskName,
                 typeName: a.typeName,
                 weekHours: Object.fromEntries(weeks.map((w) => [w, 0])),
+                payCategory: a.payCategory,
+                payRate: a.payRate,
               };
               grouped[a.tutorId].push(row);
             }
@@ -116,6 +118,8 @@ const UnitAllocations: React.FC = () => {
       allocations: rows.map((r) => ({
         taskId: r.taskId,
         weekHours: r.weekHours,
+        payRate: r.payRate,
+        payCategory: r.payCategory,
       })),
     };
 
@@ -132,7 +136,10 @@ const UnitAllocations: React.FC = () => {
   };
 
   const onAddAllocation = async () => {
-    const { taskId } = await allocForm.validateFields();
+    const values = await allocForm.validateFields();
+    const { taskId, selectedPayRate } = values;
+    const payRate = selectedPayRate.value;
+    const payCategory = selectedPayRate.category;
     const task = tasks.find((t) => t.id === taskId);
     if (!task || currentTutor === null) return;
 
@@ -143,7 +150,10 @@ const UnitAllocations: React.FC = () => {
       taskName: task.name,
       typeName: typeMap[task.typeId] || "Uncategorised",
       weekHours: Object.fromEntries(weeks.map((w) => [w, 0])),
+      payRate: payRate, // 新增
+      payCategory: payCategory,// 新增
     };
+
 
     setAllocations((prev) => ({
       ...prev,
@@ -172,6 +182,18 @@ const UnitAllocations: React.FC = () => {
 
   const typeColumns = [
     { title: intl.formatMessage({ id: "unitAlloc.taskTypes" }), dataIndex: "name" },
+    {
+      title: intl.formatMessage({ id: "unitAlloc.phdPayRate" }),
+      dataIndex: "phdPayRate",
+      render: (val: number) => (val ? `$${val.toFixed(2)}/hr` : "-"),
+      width: 160,
+    },
+    {
+      title: intl.formatMessage({ id: "unitAlloc.nonPhdPayRate" }),
+      dataIndex: "nonPhdPayRate",
+      render: (val: number) => (val ? `$${val.toFixed(2)}/hr` : "-"),
+      width: 180,
+    },
     {
       title: intl.formatMessage({ id: "approvals.col.action" }),
       width: 100,
@@ -308,6 +330,8 @@ const UnitAllocations: React.FC = () => {
           typeName: row.typeName,
           taskName: row.taskName,
           weekHours: row.weekHours,
+          payRate: row.payRate,           // 👈 新增
+          payCategory: row.payCategory,   // 👈 新增
         }))}
         onChange={(taskId, week, val) => handleWeekChange(tutor.id, taskId, week, val)}
         onDelete={async (record) => {
@@ -328,8 +352,15 @@ const UnitAllocations: React.FC = () => {
   ));
 
   const onCreateType = async () => {
-    const { name } = await typeForm.validateFields();
-    const res = await createTaskType({ unitId: selectedUnit!, name: name.trim() });
+    const values  = await typeForm.validateFields();
+    const payload = {
+      unitId: selectedUnit!,
+      name: values.name.trim(),
+      phd_pay_rate: values.phd_pay_rate,
+      non_phd_pay_rate: values.non_phd_pay_rate,
+    };
+
+    const res = await createTaskType(payload);
     if (res.success) {
       message.success(intl.formatMessage({ id: "unitAlloc.message.addSuccess" }));
       getTaskTypes(selectedUnit!).then((r) => setTaskTypes(r.data || []));
@@ -432,7 +463,58 @@ const UnitAllocations: React.FC = () => {
           >
             <Input placeholder="e.g. Tutorial / Lab / Marking" />
           </Form.Item>
+
+          {/* PhD Pay Rate */}
+          <Form.Item
+            name="phd_pay_rate"
+            label={intl.formatMessage({ id: "unitAlloc.phdPayRate" })}
+            rules={[
+              {
+                required: true,
+                message: intl.formatMessage({ id: "unitAlloc.message.phdPayRateRequired" }),
+              },
+              {
+                type: "number",
+                min: 0,
+                message: intl.formatMessage({ id: "unitAlloc.message.invalidNumber" }),
+              },
+            ]}
+          >
+            <InputNumber
+              min={0}
+              step={0.5}
+              style={{ width: "100%" }}
+              placeholder="e.g. 65.00"
+              addonAfter="$ / hr"
+            />
+          </Form.Item>
+
+          {/* Non-PhD Pay Rate */}
+          <Form.Item
+            name="non_phd_pay_rate"
+            label={intl.formatMessage({ id: "unitAlloc.nonPhdPayRate" })}
+            rules={[
+              {
+                required: true,
+                message: intl.formatMessage({ id: "unitAlloc.message.nonPhdPayRateRequired" }),
+              },
+              {
+                type: "number",
+                min: 0,
+                message: intl.formatMessage({ id: "unitAlloc.message.invalidNumber" }),
+              },
+            ]}
+          >
+            <InputNumber
+              min={0}
+              step={0.5}
+              style={{ width: "100%" }}
+              placeholder="e.g. 55.00"
+              addonAfter="$ / hr"
+            />
+          </Form.Item>
         </Form>
+
       </Modal>
 
       {/* 新增任务弹窗 */}
@@ -475,12 +557,25 @@ const UnitAllocations: React.FC = () => {
         destroyOnClose
       >
         <Form form={allocForm} layout="vertical">
+          {/* Task 选择 */}
           <Form.Item
             name="taskId"
             label={intl.formatMessage({ id: "unitAlloc.unitTasks" })}
             rules={[{ required: true, message: intl.formatMessage({ id: "unitAlloc.message.addSuccess" }) }]}
           >
-            <Select placeholder={intl.formatMessage({ id: "unitAlloc.unitTasks" })}>
+            <Select
+              placeholder={intl.formatMessage({ id: "unitAlloc.unitTasks" })}
+              onChange={(taskId) => {
+                const task = tasks.find((t) => t.id === taskId);
+                if (task) {
+                  allocForm.setFieldsValue({
+                    phdPayRate: task.phdPayRate,
+                    nonPhdPayRate: task.nonPhdPayRate,
+                    selectedPayRate: undefined, // 重置上次选择
+                  });
+                }
+              }}
+            >
               {tasks.filter((t) => t.isActive).map((t) => (
                 <Option key={t.id} value={t.id}>
                   [{typeMap[t.typeId] || "Uncategorised"}] {t.name}
@@ -488,7 +583,56 @@ const UnitAllocations: React.FC = () => {
               ))}
             </Select>
           </Form.Item>
+
+          {/* 展示对应 payrate */}
+          <Form.Item noStyle shouldUpdate={(prev, curr) => prev.taskId !== curr.taskId}>
+            {({ getFieldValue }) => {
+              const taskId = getFieldValue("taskId");
+              console.log(tasks)
+              const task = tasks.find((t) => t.id === taskId);
+              if (!task) return null;
+
+              return (
+                <>
+                  <Form.Item
+                    name="selectedPayRate"
+                    label={intl.formatMessage({ id: "unitAlloc.selectPayRate" })}
+                    rules={[{ required: true, message: intl.formatMessage({ id: "unitAlloc.message.payRateRequired" }) }]}
+                  >
+                    <Select
+                      labelInValue
+                      placeholder="Select Pay Rate"
+                      options={[
+                        {
+                          value: task.phdPayRate,
+                          label: `PhD Rate — $${task.phdPayRate?.toFixed(2) ?? "N/A"}/hr`,
+                          category: "PHD",
+                        },
+                        {
+                          value: task.nonPhdPayRate,
+                          label: `Non-PhD Rate — $${task.nonPhdPayRate?.toFixed(2) ?? "N/A"}/hr`,
+                          category: "NON_PHD",
+                        },
+                      ]}
+                      onChange={(val, option: any) => {
+                        // 👇 手动补上 category
+                        allocForm.setFieldsValue({
+                          selectedPayRate: {
+                            ...val,
+                            category: option.category,
+                          },
+                        });
+                      }}
+                    />
+                  </Form.Item>
+
+
+                </>
+              );
+            }}
+          </Form.Item>
         </Form>
+
       </Modal>
     </div>
   );

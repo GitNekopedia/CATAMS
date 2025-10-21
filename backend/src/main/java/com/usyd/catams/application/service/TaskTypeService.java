@@ -7,6 +7,7 @@ import com.usyd.catams.domain.model.UnitTaskType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,7 +20,7 @@ public class TaskTypeService {
     }
 
     @Transactional
-    public TaskTypeDTO createTaskType(Long unitId, String name) {
+    public TaskTypeDTO createTaskType(Long unitId, String name, BigDecimal phdPayRate, BigDecimal nonPhdPayRate) {
         // 防止重复
         UnitTaskType existing = taskTypeMapper.findByUnitAndName(unitId, name);
         if (existing != null) {
@@ -29,6 +30,8 @@ public class TaskTypeService {
         UnitTaskType type = new UnitTaskType();
         type.setUnitId(unitId);
         type.setName(name);
+        type.setPhdPayRate(phdPayRate);
+        type.setNonPhdPayRate(nonPhdPayRate);
 
         taskTypeMapper.insert(type);
         return DtoMapper.toTaskTypeDTO(type);

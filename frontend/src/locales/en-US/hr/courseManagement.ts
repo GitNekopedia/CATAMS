@@ -1,0 +1,30 @@
+export default {
+  'hr.courseManagement.title': 'Course Management',
+
+  'hr.courseManagement.table.code': 'Course Code',
+  'hr.courseManagement.table.name': 'Course Name',
+  'hr.courseManagement.table.semester': 'Semester',
+  'hr.courseManagement.table.startDate': 'Start Date',
+  'hr.courseManagement.table.endDate': 'End Date',
+  'hr.courseManagement.table.totalBudgetHours': 'Total Budget Hours',
+  'hr.courseManagement.table.remainingBudget': 'Remaining Budget Hours',
+  'hr.courseManagement.table.actions': 'Actions',
+  'hr.courseManagement.table.edit': 'Edit',
+  'hr.courseManagement.table.delete': 'Delete',
+  'hr.courseManagement.table.confirmDelete': 'Are you sure you want to delete this course?',
+
+  'hr.courseManagement.filter.code': 'Course Code',
+  'hr.courseManagement.filter.name': 'Course Name',
+  'hr.courseManagement.filter.minBudget': 'Min Budget',
+  'hr.courseManagement.filter.maxBudget': 'Max Budget',
+  'hr.courseManagement.filter.dateRange': 'Date Range',
+  'hr.courseManagement.filter.search': 'Search',
+  'hr.courseManagement.filter.reset': 'Reset',
+  'hr.courseManagement.filter.add': 'Add Course',
+
+  'hr.courseManagement.message.loadFail': 'Failed to load courses',
+  'hr.courseManagement.message.createSuccess': 'Course created successfully',
+  'hr.courseManagement.message.updateSuccess': 'Course updated successfully',
+  'hr.courseManagement.message.deleteSuccess': 'Course deleted successfully',
+  'hr.courseManagement.message.actionFail': 'Operation failed',
+};

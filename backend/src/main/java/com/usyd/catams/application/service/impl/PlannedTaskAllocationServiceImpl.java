@@ -64,6 +64,8 @@ public class PlannedTaskAllocationServiceImpl implements PlannedTaskAllocationSe
                 record.setTutorId(tutorId);
                 record.setWeekStart(weekStart);
                 record.setPlannedHours(hours);
+                record.setPayRate(dto.getPayRate());
+                record.setPayCategory(dto.getPayCategory());
                 record.setNote(null);
                 record.setCreatedBy(createdBy);
 

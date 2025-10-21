@@ -48,7 +48,12 @@ export async function getTaskTypes(unitId: number) {
   return request<API.ApiResponse<any>>(`/api/task-types/unit/${unitId}`);
 }
 
-export async function createTaskType(data: { unitId: number; name: string }) {
+export async function createTaskType(data: {
+  unitId: number;
+  name: string;
+  phd_pay_rate: number;
+  non_phd_pay_rate: number;
+}) {
   return request<API.ApiResponse<any>>("/api/task-types", {
     method: "POST",
     data,
