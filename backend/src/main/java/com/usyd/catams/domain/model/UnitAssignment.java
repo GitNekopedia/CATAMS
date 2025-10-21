@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("unit_assigment")
+@TableName("unit_assignment")
 public class UnitAssignment {
     private Long id;
     private Long unitId;

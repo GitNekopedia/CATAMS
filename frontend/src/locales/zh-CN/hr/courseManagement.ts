@@ -1,0 +1,30 @@
+export default {
+  'hr.courseManagement.title': '课程管理',
+
+  'hr.courseManagement.table.code': '课程代码',
+  'hr.courseManagement.table.name': '课程名称',
+  'hr.courseManagement.table.semester': '学期',
+  'hr.courseManagement.table.startDate': '开始日期',
+  'hr.courseManagement.table.endDate': '结束日期',
+  'hr.courseManagement.table.totalBudgetHours': '总预算工时',
+  'hr.courseManagement.table.remainingBudget': '剩余预算工时',
+  'hr.courseManagement.table.actions': '操作',
+  'hr.courseManagement.table.edit': '编辑',
+  'hr.courseManagement.table.delete': '删除',
+  'hr.courseManagement.table.confirmDelete': '确认删除该课程？',
+
+  'hr.courseManagement.filter.code': '课程代码',
+  'hr.courseManagement.filter.name': '课程名称',
+  'hr.courseManagement.filter.minBudget': '最小预算',
+  'hr.courseManagement.filter.maxBudget': '最大预算',
+  'hr.courseManagement.filter.dateRange': '日期范围',
+  'hr.courseManagement.filter.search': '查询',
+  'hr.courseManagement.filter.reset': '重置',
+  'hr.courseManagement.filter.add': '新增课程',
+
+  'hr.courseManagement.message.loadFail': '加载课程失败',
+  'hr.courseManagement.message.createSuccess': '课程创建成功',
+  'hr.courseManagement.message.updateSuccess': '课程更新成功',
+  'hr.courseManagement.message.deleteSuccess': '课程删除成功',
+  'hr.courseManagement.message.actionFail': '操作失败',
+};

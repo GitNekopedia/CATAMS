@@ -5,6 +5,7 @@ import com.usyd.catams.adapter.web.dto.PlannedAllocationDTO;
 import com.usyd.catams.domain.model.PlannedTaskAllocationRecord;
 import org.apache.ibatis.annotations.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Mapper
@@ -20,6 +21,8 @@ public interface PlannedTaskAllocationMapper {
                a.task_id,
                ut.name       AS taskName,
                utt.name      AS typeName,
+               a.pay_category,
+               a.pay_rate,
                a.week_start,
                a.planned_hours
         FROM planned_task_allocation a
@@ -62,10 +65,10 @@ public interface PlannedTaskAllocationMapper {
     @Insert("""
         <script>
         INSERT INTO planned_task_allocation
-            (task_id, tutor_id, week_start, planned_hours, note, created_by)
+            (task_id, tutor_id, week_start, planned_hours, pay_rate, pay_category, note, created_by)
         VALUES
         <foreach collection="records" item="r" separator=",">
-            (#{r.taskId}, #{r.tutorId}, #{r.weekStart}, #{r.plannedHours}, #{r.note}, #{r.createdBy})
+            (#{r.taskId}, #{r.tutorId}, #{r.weekStart}, #{r.plannedHours}, COALESCE(#{r.payRate}, 50.10), #{r.payCategory}, #{r.note}, #{r.createdBy})
         </foreach>
         ON DUPLICATE KEY UPDATE
             planned_hours = VALUES(planned_hours),
@@ -96,7 +99,9 @@ public interface PlannedTaskAllocationMapper {
             "    ut.name AS taskName,",
             "    utt.name AS typeName,",
             "    a.week_start,",
-            "    a.planned_hours",
+            "    a.planned_hours,",
+            "    a.pay_rate,",
+            "    a.pay_category",
             "FROM planned_task_allocation a",
             "JOIN unit_task ut ON a.task_id = ut.id",
             "JOIN unit_task_type utt ON ut.type_id = utt.id",
@@ -114,4 +119,6 @@ public interface PlannedTaskAllocationMapper {
     );
 
 
+    @Select("SELECT pay_rate FROM planned_task_allocation WHERE task_id = #{taskId}")
+    BigDecimal getPayRateByTaskId(Long taskId);
 }

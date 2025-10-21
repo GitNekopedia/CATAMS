@@ -10,9 +10,11 @@ import com.usyd.catams.domain.enums.WorkSource;
 import com.usyd.catams.domain.enums.WorkStatus;
 import com.usyd.catams.domain.model.ApprovalTask;
 import com.usyd.catams.domain.model.CourseUnit;
+import com.usyd.catams.domain.model.UnitAssignment;
 import com.usyd.catams.domain.model.WorkEntry;
 import com.usyd.catams.infrastructure.cache.CourseMetaCache;
 import com.usyd.catams.infrastructure.cache.RedisWorkEntryCache;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,39 +22,20 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+@RequiredArgsConstructor
 @Slf4j
 @Service
 public class SubmitWorkEntryHandler {
     private final WorkEntryMapper workEntryMapper;
     private final ApprovalTaskMapper approvalTaskMapper;
-    private final UnitAssignmentMapper unitAssignmentMapper;
+    private final PlannedTaskAllocationMapper plannedTaskAllocationMapper;
     private final CourseUnitMapper courseUnitMapper;
 
-    private final RedisWorkEntryCache weCache;
     private final CourseMetaCache courseMetaCache;
     private final TaskMapper taskMapper;
     private final UserMapper userMapper;
     private final NotificationService notificationService;
 
-    public SubmitWorkEntryHandler(WorkEntryMapper workEntryMapper,
-                                  ApprovalTaskMapper approvalTaskMapper,
-                                  UnitAssignmentMapper unitAssignmentMapper,
-                                  CourseUnitMapper courseUnitMapper,
-                                  RedisWorkEntryCache weCache,
-                                  CourseMetaCache courseMetaCache,
-                                  TaskMapper taskMapper,
-                                  UserMapper userMapper,
-                                  NotificationService notificationService) {
-        this.workEntryMapper = workEntryMapper;
-        this.approvalTaskMapper = approvalTaskMapper;
-        this.unitAssignmentMapper = unitAssignmentMapper;
-        this.courseUnitMapper = courseUnitMapper;
-        this.weCache = weCache;
-        this.courseMetaCache = courseMetaCache;
-        this.taskMapper = taskMapper;
-        this.userMapper = userMapper;
-        this.notificationService = notificationService;
-    }
 
     @Transactional
     public Long handle(Long submitterId, WorkEntrySubmitRequest req) {
@@ -77,9 +60,6 @@ public class SubmitWorkEntryHandler {
         }
 
 
-        // 查薪资快照
-        BigDecimal payRate = unitAssignmentMapper.findPayRate(submitterId, req.unitId());
-        if (payRate == null) throw new IllegalStateException("未找到 tutor 的薪资记录");
 
         // 根据task 获取worktype
         Long taskId = req.taskId();
@@ -91,9 +71,16 @@ public class SubmitWorkEntryHandler {
                 .eq(WorkEntry::getOriginPlannedId, req.originPlannedId()));
         if (exists) throw new IllegalStateException("该任务在该周已提交过工时");
 
+        // 获取当前的 pay_rate 作为快照
+        BigDecimal payRateSnapShot = plannedTaskAllocationMapper.getPayRateByTaskId(taskId);
+        if (payRateSnapShot == null) {
+            throw new IllegalStateException("未找到该任务的 pay_rate");
+        }
+
         LocalDateTime now = LocalDateTime.now();
 
         var entry = new WorkEntry();
+        entry.setPayRateSnapshot(payRateSnapShot);
         entry.setTutorId(submitterId);
         entry.setUnitId(req.unitId());
         entry.setUnitCode(unit.getCode());
@@ -103,7 +90,6 @@ public class SubmitWorkEntryHandler {
         entry.setWeekStart(req.weekStart());
         entry.setHours(req.hours());
         entry.setDescription(req.description());
-        entry.setPayRateSnapshot(payRate);
         entry.setWorkType(workType);
 
         // 根据 substitute 标记来源

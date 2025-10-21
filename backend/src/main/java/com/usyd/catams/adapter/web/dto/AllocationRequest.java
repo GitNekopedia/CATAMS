@@ -9,5 +9,6 @@ public class AllocationRequest {
     private Long unitId;
     private Long tutorId;
     private List<WeekHoursDTO> allocations;
+
 }
 

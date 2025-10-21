@@ -5,6 +5,13 @@ import pages from './zh-CN/pages';
 import pwa from './zh-CN/pwa';
 import settingDrawer from './zh-CN/settingDrawer';
 import settings from './zh-CN/settings';
+import hrUnitAssignment from "@/locales/zh-CN/hr/unitAssignment";
+import hrAssignmentForm from "@/locales/zh-CN/hr/components/assignmentForm";
+import hrCourseForm from "@/locales/zh-CN/hr/components/courseForm";
+import hrUserForm from "@/locales/zh-CN/hr/components/userForm";
+import hrCourseManagement from "@/locales/zh-CN/hr/courseManagement";
+import hrUserManagement from "@/locales/zh-CN/hr/userManagement";
+
 
 export default {
   'navBar.lang': '语言',
@@ -78,6 +85,7 @@ export default {
   'activity.tutor.warning.noCourse': '请先选择课程',
   'activity.tutor.error.noAllocation': '未找到对应的任务分配',
   'activity.tutor.plannedHours': '分配时长',
+  'activity.tutor.weekStart': '开始周',
 
 
   // PendingApprovals
@@ -93,6 +101,7 @@ export default {
 
   // DetailedLecturerPendingApprovals
   'approvals.header': '待审批工时记录',
+  'approvals.header.hr': '审批工时管理',
   'approvals.searchPlaceholder': '搜索助教/课程/描述',
   'approvals.col.tutor': '助教',
   'approvals.col.unit': '课程',
@@ -146,6 +155,13 @@ export default {
   'unitAlloc.message.requestFail': '请求失败，请检查后端接口',
   'unitAlloc.allUnits': '所有课程',
 
+  "unitAlloc.phdPayRate": "博士薪酬标准",
+  "unitAlloc.nonPhdPayRate": "非博士薪酬标准",
+  "unitAlloc.message.typeRequired": "请输入任务类型名称",
+  "unitAlloc.message.phdPayRateRequired": "请输入博士薪酬标准",
+  "unitAlloc.message.nonPhdPayRateRequired": "请输入非博士薪酬标准",
+  "unitAlloc.message.invalidNumber": "请输入有效的数字",
+
   // Tutor UnitAllocations
   'tutor.unitAlloc.allocations.by.course': '按课程查看',
   'tutor.unitAlloc.allocations.by.week': '按周查看',
@@ -169,4 +185,11 @@ export default {
   ...settings,
   ...pwa,
   ...component,
+  ...hrUnitAssignment,
+  ...hrAssignmentForm,
+  ...hrCourseForm,
+  ...hrUserForm,
+  ...hrCourseManagement,
+  ...hrUserManagement,
+
 };

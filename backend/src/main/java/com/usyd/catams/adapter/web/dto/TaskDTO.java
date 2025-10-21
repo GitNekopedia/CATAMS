@@ -2,6 +2,8 @@ package com.usyd.catams.adapter.web.dto;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 public class TaskDTO {
     private Long id;
@@ -9,6 +11,8 @@ public class TaskDTO {
     private Long typeId;
     private String name;
     private Boolean isActive;
+    private BigDecimal phdPayRate;
+    private BigDecimal nonPhdPayRate;
     private String createdAt;
     private String updatedAt;
 }

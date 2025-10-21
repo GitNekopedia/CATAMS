@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Table, Button, Space, Popconfirm, message, Select, Input, Modal } from 'antd';
+import { useIntl } from '@umijs/max';
 import { getUserList, createUser, updateUser, deleteUser } from '@/services/hr/userService';
 import UserForm from './components/UserForm';
 
 const UserManagement: React.FC = () => {
+  const intl = useIntl();
+
   const [users, setUsers] = useState<API.User[]>([]);
   const [loading, setLoading] = useState(false);
   const [roleFilter, setRoleFilter] = useState<string | undefined>();
@@ -17,9 +20,8 @@ const UserManagement: React.FC = () => {
       const res = await getUserList({ role: roleFilter, keyword: searchKeyword });
       if (res.success) setUsers(res.data);
       else message.error(res.message);
-    } catch (err) {
-      console.error(err);
-      message.error('加载用户失败');
+    } catch {
+      message.error(intl.formatMessage({ id: 'hr.userManagement.message.loadFail' }));
     } finally {
       setLoading(false);
     }
@@ -32,34 +34,74 @@ const UserManagement: React.FC = () => {
   const handleDelete = async (id: number) => {
     const res = await deleteUser(id);
     if (res.success) {
-      message.success('删除成功');
+      message.success(intl.formatMessage({ id: 'hr.userManagement.message.deleteSuccess' }));
       fetchData();
     } else message.error(res.message);
   };
 
   const handleSave = async (values: API.UserForm) => {
-    const res = editingUser ? await updateUser(editingUser.id, values) : await createUser(values);
+    const res = editingUser
+      ? await updateUser(editingUser.id, values)
+      : await createUser(values);
+
     if (res.success) {
-      message.success(editingUser ? '更新成功' : '创建成功');
+      message.success(
+        intl.formatMessage({
+          id: editingUser
+            ? 'hr.userManagement.message.updateSuccess'
+            : 'hr.userManagement.message.createSuccess',
+        }),
+      );
       setFormVisible(false);
       setEditingUser(null);
       fetchData();
-    } else message.error(res.message);
+    } else {
+      message.error(res.message || intl.formatMessage({ id: 'hr.userManagement.message.actionFail' }));
+    }
   };
 
   const columns = [
-    { title: '姓名', dataIndex: 'name', key: 'name' },
-    { title: '邮箱', dataIndex: 'email', key: 'email' },
-    { title: '角色', dataIndex: 'role', key: 'role' },
-    { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt' },
     {
-      title: '操作',
+      title: intl.formatMessage({ id: 'hr.userManagement.table.name' }),
+      dataIndex: 'name',
+      key: 'name',
+    },
+    {
+      title: intl.formatMessage({ id: 'hr.userManagement.table.email' }),
+      dataIndex: 'email',
+      key: 'email',
+    },
+    {
+      title: intl.formatMessage({ id: 'hr.userManagement.table.role' }),
+      dataIndex: 'role',
+      key: 'role',
+    },
+    {
+      title: intl.formatMessage({ id: 'hr.userManagement.table.createdAt' }),
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+    },
+    {
+      title: intl.formatMessage({ id: 'hr.userManagement.table.actions' }),
       key: 'action',
       render: (_: any, record: API.User) => (
         <Space>
-          <Button type="link" onClick={() => { setEditingUser(record); setFormVisible(true); }}>编辑</Button>
-          <Popconfirm title="确定删除该用户？" onConfirm={() => handleDelete(record.id)}>
-            <Button type="link" danger>删除</Button>
+          <Button
+            type="link"
+            onClick={() => {
+              setEditingUser(record);
+              setFormVisible(true);
+            }}
+          >
+            {intl.formatMessage({ id: 'hr.userManagement.table.edit' })}
+          </Button>
+          <Popconfirm
+            title={intl.formatMessage({ id: 'hr.userManagement.table.confirmDelete' })}
+            onConfirm={() => handleDelete(record.id)}
+          >
+            <Button type="link" danger>
+              {intl.formatMessage({ id: 'hr.userManagement.table.delete' })}
+            </Button>
           </Popconfirm>
         </Space>
       ),
@@ -68,11 +110,15 @@ const UserManagement: React.FC = () => {
 
   return (
     <div style={{ padding: 24 }}>
-      <h2 style={{ marginBottom: 16 }}>用户管理</h2>
+      <h2 style={{ marginBottom: 16 }}>
+        {intl.formatMessage({ id: 'hr.userManagement.title' })}
+      </h2>
+
+      {/* Filters */}
       <Space style={{ marginBottom: 16 }}>
         <Select
           allowClear
-          placeholder="按角色筛选"
+          placeholder={intl.formatMessage({ id: 'hr.userManagement.filter.role' })}
           style={{ width: 160 }}
           onChange={setRoleFilter}
           options={[
@@ -83,15 +129,22 @@ const UserManagement: React.FC = () => {
           ]}
         />
         <Input.Search
-          placeholder="搜索姓名或邮箱"
+          placeholder={intl.formatMessage({ id: 'hr.userManagement.filter.keyword' })}
           onSearch={setSearchKeyword}
           style={{ width: 200 }}
         />
-        <Button type="primary" onClick={() => { setEditingUser(null); setFormVisible(true); }}>
-          新增用户
+        <Button
+          type="primary"
+          onClick={() => {
+            setEditingUser(null);
+            setFormVisible(true);
+          }}
+        >
+          {intl.formatMessage({ id: 'hr.userManagement.filter.add' })}
         </Button>
       </Space>
 
+      {/* Table */}
       <Table
         columns={columns}
         dataSource={users}
@@ -100,8 +153,13 @@ const UserManagement: React.FC = () => {
         pagination={{ pageSize: 10 }}
       />
 
+      {/* Modal */}
       <Modal
-        title={editingUser ? '编辑用户' : '新增用户'}
+        title={
+          editingUser
+            ? intl.formatMessage({ id: 'hr.userManagement.table.edit' })
+            : intl.formatMessage({ id: 'hr.userManagement.filter.add' })
+        }
         open={formVisible}
         onCancel={() => setFormVisible(false)}
         footer={null}

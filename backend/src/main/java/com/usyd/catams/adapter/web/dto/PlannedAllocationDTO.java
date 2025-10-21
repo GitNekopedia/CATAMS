@@ -2,6 +2,8 @@ package com.usyd.catams.adapter.web.dto;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 public class PlannedAllocationDTO {
     private Long id;
@@ -14,4 +16,6 @@ public class PlannedAllocationDTO {
     private String typeName;
     private String weekStart;
     private Double plannedHours;
+    private BigDecimal payRate;
+    private String payCategory;
 }

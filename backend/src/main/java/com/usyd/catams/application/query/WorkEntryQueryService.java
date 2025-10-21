@@ -216,4 +216,33 @@ public class WorkEntryQueryService {
                 .toList();
     }
 
+    public List<DetailedLecturerPendingWorkEntryDTO> getAllHRDetailedEntries(Long id) {
+        // HR 不受课程限制，查看所有工时记录
+        List<LecturerPendingWorkEntryDTO> workEntries = workEntryMapper.findAllWorkEntries();
+
+        if (workEntries.isEmpty()) {
+            return List.of();
+        }
+
+        // 提取 entryIds
+        List<Long> entryIds = workEntries.stream()
+                .map(LecturerPendingWorkEntryDTO::getWorkEntryId)
+                .toList();
+
+        // 查询所有审批任务
+        List<ApprovalTaskDTO> tasks = approvalTaskMapper.findTasksByEntryIds(entryIds);
+        Map<Long, List<ApprovalTaskDTO>> taskMap = tasks.stream()
+                .collect(Collectors.groupingBy(ApprovalTaskDTO::getEntryId));
+
+        // 拼装详细 DTO 列表
+        return workEntries.stream()
+                .map(we -> {
+                    DetailedLecturerPendingWorkEntryDTO dto = new DetailedLecturerPendingWorkEntryDTO();
+                    BeanUtils.copyProperties(we, dto);
+                    dto.setApprovalTasks(taskMap.getOrDefault(we.getWorkEntryId(), List.of()));
+                    return dto;
+                })
+                .toList();
+
+    }
 }

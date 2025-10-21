@@ -22,7 +22,7 @@ public class TaskTypeController {
     @PostMapping
     public ApiResponse<TaskTypeDTO> create(@RequestBody TaskTypeRequest req) {
         try {
-            TaskTypeDTO type = taskTypeService.createTaskType(req.getUnitId(), req.getName());
+            TaskTypeDTO type = taskTypeService.createTaskType(req.getUnitId(), req.getName(), req.getPhdPayRate(), req.getNonPhdPayRate());
             return ApiResponse.ok(type);
         } catch (IllegalArgumentException e) {
             return ApiResponse.fail(e.getMessage());

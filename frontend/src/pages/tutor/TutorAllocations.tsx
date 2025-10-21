@@ -65,6 +65,8 @@ const TutorAllocations: React.FC = () => {
                 taskId: a.taskId,
                 taskName: a.taskName,
                 typeName: a.typeName,
+                payCategory: a.payCategory,   // 👈 新增：PHD / Non-PhD
+                payRate: a.payRate,       // 👈 新增：对应的时薪
                 weekHours: Object.fromEntries(weeks.map((w) => [w, 0])),
               };
               grouped[unitId].push(row);

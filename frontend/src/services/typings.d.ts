@@ -1,5 +1,12 @@
 declare namespace API {
 
+  /** 用户表单字段 */
+  type UserForm = {
+    name: string;
+    email: string;
+    role: 'Lecturer' | 'Tutor' | 'HR' | 'Admin';
+  };
+
   type AllocationResponse = {
     id: number;
     unitId: number;
@@ -9,6 +16,8 @@ declare namespace API {
     taskId: number;
     taskName: string;
     typeName: string;
+    payRate: number;
+    payCategory: string;
     weekStart: string;      // "2025-03-01"
     plannedHours: number;
   };
@@ -31,6 +40,8 @@ declare namespace API {
     allocations: {
       taskId: number;
       weekHours: Record<string, number>; // { "2025-08-04": 2, "2025-08-11": 0 }
+      payRate: number;
+      payCategory: string;
     }[];
   };
 
@@ -41,12 +52,16 @@ declare namespace API {
     taskName: string;
     typeName: string;
     weekHours: Record<string, number>; // { Week1: 0, Week2: 0, ... }
+    payRate: number;
+    payCategory: string;
   };
 
   type TaskTypeDTO = {
     id: number;
     unitId: number;
     name: string;
+    phdPayRate: number;
+    nonPhdPayRate: number;
     createdAt: string;
     updatedAt: string;
   };
@@ -57,6 +72,8 @@ declare namespace API {
     typeId: number;
     name: string;
     isActive: boolean;
+    phdPayRate: number;
+    nonPhdPayRate: number;
     createdAt: string;
     updatedAt: string;
   };
@@ -150,8 +167,13 @@ declare namespace API {
     id: number;
     code: string;
     name: string;
+    semester: string;
+    startDate: string;
+    endDate: string;
     totalBudgetHours: number;
     remainingBudget: number;
+    createdAt: string;
+    updatedAt: string;
   };
 
   type WorkEntry = {

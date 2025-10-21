@@ -5,6 +5,13 @@ import pages from './en-US/pages';
 import pwa from './en-US/pwa';
 import settingDrawer from './en-US/settingDrawer';
 import settings from './en-US/settings';
+import hrUnitAssignment from "@/locales/en-US/hr/unitAssignment";
+import hrAssignmentForm from "@/locales/en-US/hr/components/assignmentForm";
+import hrCourseForm from "@/locales/en-US/hr/components/courseForm";
+import hrUserForm from "@/locales/en-US/hr/components/userForm";
+import hrCourseManagement from "@/locales/en-US/hr/courseManagement";
+import hrUserManagement from "@/locales/en-US/hr/userManagement";
+
 
 export default {
   'navBar.lang': 'Languages',
@@ -79,6 +86,7 @@ export default {
   'activity.tutor.warning.noCourse': 'Please select a course first',
   'activity.tutor.error.noAllocation': 'No corresponding allocation found',
   'activity.tutor.plannedHours': 'Planned Hours',
+  'activity.tutor.weekStart': 'Week Start',
 
   // PendingApprovals
   'pendingApprovals.header': 'Pending Approvals',
@@ -93,6 +101,7 @@ export default {
 
   // DetailedLecturerPendingApprovals
   'approvals.header': 'Pending Work Entries',
+  'approvals.header.hr': 'Work Entries Management',
   'approvals.searchPlaceholder': 'Search tutor/course/description',
   'approvals.col.tutor': 'Tutor',
   'approvals.col.unit': 'Course',
@@ -146,6 +155,13 @@ export default {
   'unitAlloc.message.requestFail': 'Request failed, check backend API',
   'unitAlloc.allUnits': 'All Courses',
 
+  "unitAlloc.phdPayRate": "PhD Pay Rate",
+  "unitAlloc.nonPhdPayRate": "Non-PhD Pay Rate",
+  "unitAlloc.message.typeRequired": "Please enter a task type name",
+  "unitAlloc.message.phdPayRateRequired": "Please enter PhD pay rate",
+  "unitAlloc.message.nonPhdPayRateRequired": "Please enter Non-PhD pay rate",
+  "unitAlloc.message.invalidNumber": "Please enter a valid number",
+
   // Tutor UnitAllocations
   'tutor.unitAlloc.allocations.by.course': 'View By Course',
   'tutor.unitAlloc.allocations.by.week': 'View By Week',
@@ -166,4 +182,11 @@ export default {
   ...pwa,
   ...component,
   ...pages,
+  ...hrUnitAssignment,
+  ...hrAssignmentForm,
+  ...hrCourseForm,
+  ...hrUserForm,
+  ...hrCourseManagement,
+  ...hrUserManagement,
+
 };

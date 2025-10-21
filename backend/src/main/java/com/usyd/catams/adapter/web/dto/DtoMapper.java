@@ -13,6 +13,8 @@ public class DtoMapper {
         dto.setId(model.getId());
         dto.setUnitId(model.getUnitId());
         dto.setName(model.getName());
+        dto.setPhdPayRate(model.getPhdPayRate());
+        dto.setNonPhdPayRate(model.getNonPhdPayRate());
         dto.setCreatedAt(model.getCreatedAt() != null ? model.getCreatedAt().format(F) : null);
         dto.setUpdatedAt(model.getUpdatedAt() != null ? model.getUpdatedAt().format(F) : null);
         return dto;
@@ -25,6 +27,8 @@ public class DtoMapper {
         dto.setTypeId(model.getTypeId());
         dto.setName(model.getName());
         dto.setIsActive(model.getIsActive());
+        dto.setPhdPayRate(model.getPhdPayRate());
+        dto.setNonPhdPayRate(model.getNonPhdPayRate());
         dto.setCreatedAt(model.getCreatedAt() != null ? model.getCreatedAt().format(F) : null);
         dto.setUpdatedAt(model.getUpdatedAt() != null ? model.getUpdatedAt().format(F) : null);
         return dto;
