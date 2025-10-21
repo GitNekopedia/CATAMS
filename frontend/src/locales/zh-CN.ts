@@ -161,6 +161,8 @@ export default {
   "unitAlloc.message.phdPayRateRequired": "请输入博士薪酬标准",
   "unitAlloc.message.nonPhdPayRateRequired": "请输入非博士薪酬标准",
   "unitAlloc.message.invalidNumber": "请输入有效的数字",
+  "unitAlloc.selectPayRate": "请选择薪酬",
+
 
   // Tutor UnitAllocations
   'tutor.unitAlloc.allocations.by.course': '按课程查看',

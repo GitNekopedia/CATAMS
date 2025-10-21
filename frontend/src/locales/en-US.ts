@@ -161,6 +161,7 @@ export default {
   "unitAlloc.message.phdPayRateRequired": "Please enter PhD pay rate",
   "unitAlloc.message.nonPhdPayRateRequired": "Please enter Non-PhD pay rate",
   "unitAlloc.message.invalidNumber": "Please enter a valid number",
+  "unitAlloc.selectPayRate": "Please select Pay Rate",
 
   // Tutor UnitAllocations
   'tutor.unitAlloc.allocations.by.course': 'View By Course',
