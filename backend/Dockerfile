@@ -1,4 +1,4 @@
-FROM openjdk:17-jdk-slim AS base
+FROM eclipse-temurin:17-jre AS base
 WORKDIR /app
 COPY target/*.jar app.jar
 EXPOSE 9000
