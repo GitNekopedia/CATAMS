@@ -3,7 +3,7 @@
 # ==========================
 backend/target/
 backend/.idea/
-backend/.mvn/
+backend/.mvn/wrapper/maven-wrapper.jar
 backend/*.iml
 backend/*.log
 
@@ -17,6 +17,8 @@ frontend/dist/
 frontend/.idea/
 frontend/*.log
 frontend/*.iml
+frontend/coverage/
+*.tar
 
 # ==========================
 # Local database & cache
@@ -25,6 +27,18 @@ mysql_data/
 redis_data/
 rabbitmq_data/
 
+# ==========================
+# Local secrets / overrides
+# ==========================
+.env
+.env.*
+!.env.example
+*.local
+*.local.yml
+*.local.yaml
+application-local.yml
+application-local.yaml
+docker-compose.override.yml
 # ==========================
 # System / IDE files
 # ==========================

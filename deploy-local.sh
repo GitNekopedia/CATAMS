@@ -1,43 +1,55 @@
 #!/bin/bash
 set -e
 
-# ========== 基本信息 ==========
 PROJECT_NAME=catams
 DOCKER_USER=dockernekopedia
-TAG=$(date +%Y%m%d%H%M)   # 自动生成版本号（例如 202510220131）
+TAG=$(date +%Y%m%d%H%M)
 COMPOSE_FILE=docker-compose.prod.yml
 
-echo "🧱 当前版本号: $TAG"
+# Optional proxy. Examples:
+#   DEPLOY_PROXY=http://127.0.0.1:7890 bash deploy-local.sh
+#   DEPLOY_PROXY=http://127.0.0.1:7890 DEPLOY_BUILD_PROXY=http://host.docker.internal:7890 bash deploy-local.sh
+if [ -n "${DEPLOY_PROXY:-}" ]; then
+  export HTTP_PROXY="$DEPLOY_PROXY"
+  export HTTPS_PROXY="$DEPLOY_PROXY"
+  export http_proxy="$DEPLOY_PROXY"
+  export https_proxy="$DEPLOY_PROXY"
+fi
 
-# ========== 构建后端 ==========
-echo "🚀 构建 backend 镜像..."
+BUILD_PROXY="${DEPLOY_BUILD_PROXY:-${DEPLOY_PROXY:-}}"
+BUILD_ARGS=()
+if [ -n "$BUILD_PROXY" ]; then
+  BUILD_ARGS+=(--build-arg HTTP_PROXY="$BUILD_PROXY")
+  BUILD_ARGS+=(--build-arg HTTPS_PROXY="$BUILD_PROXY")
+  BUILD_ARGS+=(--build-arg http_proxy="$BUILD_PROXY")
+  BUILD_ARGS+=(--build-arg https_proxy="$BUILD_PROXY")
+fi
+
+printf 'Current image version: %s\n' "$TAG"
+
+printf 'Building backend package...\n'
 cd backend
 mvn clean package -DskipTests
 cd ..
-docker build -t $DOCKER_USER/$PROJECT_NAME-backend:$TAG ./backend
-docker tag $DOCKER_USER/$PROJECT_NAME-backend:$TAG $DOCKER_USER/$PROJECT_NAME-backend:latest
 
-# ========== 构建前端 ==========
-echo "🚀 构建 frontend 镜像..."
-docker build -t $DOCKER_USER/$PROJECT_NAME-frontend:$TAG ./frontend
-docker tag $DOCKER_USER/$PROJECT_NAME-frontend:$TAG $DOCKER_USER/$PROJECT_NAME-frontend:latest
-# ========== 推送到 Docker Hub ==========
-echo "📦 推送镜像到 Docker Hub..."
+printf 'Building backend image...\n'
+docker build "${BUILD_ARGS[@]}" -t "$DOCKER_USER/$PROJECT_NAME-backend:$TAG" ./backend
+docker tag "$DOCKER_USER/$PROJECT_NAME-backend:$TAG" "$DOCKER_USER/$PROJECT_NAME-backend:latest"
+
+printf 'Building frontend image...\n'
+docker build "${BUILD_ARGS[@]}" -t "$DOCKER_USER/$PROJECT_NAME-frontend:$TAG" ./frontend
+docker tag "$DOCKER_USER/$PROJECT_NAME-frontend:$TAG" "$DOCKER_USER/$PROJECT_NAME-frontend:latest"
+
+printf 'Pushing images to Docker Hub...\n'
 export DOCKER_CONTENT_TRUST=0
-docker push $DOCKER_USER/$PROJECT_NAME-backend:$TAG
-docker push $DOCKER_USER/$PROJECT_NAME-frontend:$TAG
-docker push $DOCKER_USER/$PROJECT_NAME-backend:latest
-docker push $DOCKER_USER/$PROJECT_NAME-frontend:latest
+docker push "$DOCKER_USER/$PROJECT_NAME-backend:$TAG"
+docker push "$DOCKER_USER/$PROJECT_NAME-frontend:$TAG"
+docker push "$DOCKER_USER/$PROJECT_NAME-backend:latest"
+docker push "$DOCKER_USER/$PROJECT_NAME-frontend:latest"
 
-# ========== 本地容器更新 ==========
-echo "🧹 停止旧容器..."
-docker-compose -f $COMPOSE_FILE down
+printf 'Updating local containers...\n'
+docker-compose -f "$COMPOSE_FILE" down
+docker-compose -f "$COMPOSE_FILE" up -d --build --force-recreate
 
-echo "🚀 启动新容器 (version: $TAG)..."
-# 可按需选择只启 backend 或全启
-docker-compose -f $COMPOSE_FILE up -d --build --force-recreate
-
-# ========== 输出结果 ==========
-echo "✅ 部署完成！"
-echo "当前镜像版本："
-docker images | grep $PROJECT_NAME
+printf 'Done. Version: %s\n' "$TAG"
+docker images | grep "$PROJECT_NAME"
