@@ -1,38 +1,47 @@
 package com.usyd.catams.application.service;
 
 import jakarta.mail.internet.MimeMessage;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class MailService {
 
-    @Autowired
-    private JavaMailSender mailSender;
+    private final JavaMailSender mailSender;
 
-    @Async  // 异步发送，防止阻塞主线程
+    @Value("${spring.mail.username:}")
+    private String fromAddress;
+
     public void sendMail(String to, String subject, String text) {
+        if (fromAddress == null || fromAddress.isBlank()) {
+            throw new IllegalStateException("spring.mail.username is not configured");
+        }
+
+        long start = System.currentTimeMillis();
         try {
-            long start = System.currentTimeMillis();
-    
-            // 创建 MimeMessage 对象
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-    
-            helper.setFrom("1842640660@qq.com"); // 发件人
-            helper.setTo(to);                   // 收件人
-            helper.setSubject(subject);         // 标题
-            helper.setText(text, true);         // 内容，第二个参数 true 表示启用 HTML
-    
+
+            helper.setFrom(fromAddress);
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(text, true);
+
             mailSender.send(message);
-            long end = System.currentTimeMillis();
-            System.out.println("✅ Mail sent to " + to);
-            System.out.println("📨 Mail sent in " + (end - start) + " ms");
+            log.info("Mail sent to {} in {} ms", to, System.currentTimeMillis() - start);
+        } catch (MailException e) {
+            log.error("Mail sending failed to {}: {}", to, e.getMessage(), e);
+            throw e;
         } catch (Exception e) {
-            System.err.println("❌ Mail sending failed: " + e.getMessage());
+            log.error("Unexpected mail sending failure to {}: {}", to, e.getMessage(), e);
+            throw new IllegalStateException("Unexpected mail sending failure", e);
         }
     }
 }

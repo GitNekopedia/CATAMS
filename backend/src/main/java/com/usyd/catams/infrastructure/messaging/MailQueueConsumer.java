@@ -56,7 +56,7 @@ public class MailQueueConsumer {
             // 不可恢复的业务异常（如参数无效）
             System.err.printf("⚠️ [Consumer] Invalid mail message, drop → To: %s | Reason: %s%n",
                     mail.getTo(), e.getMessage());
-            channel.basicReject(tag, false);
+            channel.basicAck(tag, false);
 
         } catch (Exception e) {
             // 可重试的系统异常
@@ -64,12 +64,12 @@ public class MailQueueConsumer {
                 // 超过最大次数后丢弃
                 System.err.printf("🚫 [Consumer] Retry limit reached (%d), drop message → %s%n",
                         retryCount, mail.getTo());
-                channel.basicReject(tag, false);
+                channel.basicAck(tag, false);
             } else {
                 System.err.printf("❌ [Consumer] Send failed, will retry (attempt %d/%d) → %s | Error: %s%n",
                         retryCount + 1, MAX_RETRY_COUNT, mail.getTo(), e.getMessage());
-                // 重新入队以进入重试队列
-                channel.basicNack(tag, false, true);
+                // Reject without requeue so RabbitMQ routes it through the configured retry queue.
+                channel.basicReject(tag, false);
             }
         }
     }
