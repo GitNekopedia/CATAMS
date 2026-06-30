@@ -15,6 +15,7 @@ import {
   getAllUsers,
 } from '@/services/hr/assignmentService';
 import AssignmentForm from './components/AssignmentForm';
+import type { ColumnsType } from 'antd/es/table';
 
 interface Assignment {
   id: number;
@@ -103,7 +104,7 @@ const UnitAssignment: React.FC = () => {
   };
 
   /** ==== Columns ==== */
-  const columns = [
+  const columns: ColumnsType<Assignment> = [
     {
       title: intl.formatMessage({ id: 'hr.unitAssignment.table.course' }),
       dataIndex: 'courseName',
@@ -127,7 +128,7 @@ const UnitAssignment: React.FC = () => {
         { text: 'Tutor', value: 'TUTOR' },
         { text: 'Marker', value: 'MARKER' },
       ],
-      onFilter: (value: string, record: Assignment) => record.role === value,
+      onFilter: (value, record) => record.role === String(value),
     },
     {
       title: intl.formatMessage({ id: 'hr.unitAssignment.table.quotaHours' }),

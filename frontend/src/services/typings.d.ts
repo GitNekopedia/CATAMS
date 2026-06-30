@@ -276,6 +276,9 @@ declare namespace API {
     id: number;
     name: string;
     role: string;
+    avatar?: string;
+    email?: string;
+    access?: string;
   }
 
   type LoginResult = {
@@ -288,7 +291,7 @@ declare namespace API {
   };
 
 
-  type ApiResponse<T> = {
+  type ApiResponse<T = any> = {
     success: boolean;
     message: string;
     data: T;

@@ -12,7 +12,7 @@ import {
 } from 'antd';
 import { PlusOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useIntl } from '@umijs/max';
-import dayjs from 'dayjs';
+import dayjs, { type Dayjs } from 'dayjs';
 import {
   getCourseList,
   createCourse,
@@ -35,7 +35,7 @@ const CourseManagement: React.FC = () => {
     name: '',
     minBudget: undefined as number | undefined,
     maxBudget: undefined as number | undefined,
-    dateRange: [] as any[],
+    dateRange: null as [Dayjs | null, Dayjs | null] | null,
   });
 
   const [page, setPage] = useState(1);
@@ -56,7 +56,7 @@ const CourseManagement: React.FC = () => {
         minBudget: filters.minBudget,
         maxBudget: filters.maxBudget,
       };
-      if (filters.dateRange?.length === 2) {
+      if (filters.dateRange?.[0] && filters.dateRange?.[1]) {
         params.startDate = filters.dateRange[0].format('YYYY-MM-DD');
         params.endDate = filters.dateRange[1].format('YYYY-MM-DD');
       }
@@ -177,7 +177,7 @@ const CourseManagement: React.FC = () => {
       name: '',
       minBudget: undefined,
       maxBudget: undefined,
-      dateRange: [],
+      dateRange: null,
     });
     setPage(1);
     fetchData();
@@ -217,7 +217,7 @@ const CourseManagement: React.FC = () => {
         />
         <RangePicker
           value={filters.dateRange}
-          onChange={(val) => setFilters({ ...filters, dateRange: val || [] })}
+          onChange={(val) => setFilters({ ...filters, dateRange: val })}
         />
         <Button
           type="primary"

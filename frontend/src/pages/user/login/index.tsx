@@ -113,8 +113,13 @@ const LoginMessage: React.FC<{
   );
 };
 
+type LoginState = Partial<API.LoginResult> & {
+  status?: string;
+  type?: string;
+};
+
 const Login: React.FC = () => {
-  const [userLoginState, setUserLoginState] = useState<API.LoginResult>({});
+  const [userLoginState, setUserLoginState] = useState<LoginState>({});
   const [type, setType] = useState<string>('account');
   const { initialState, setInitialState } = useModel('@@initialState');
   const { styles } = useStyles();

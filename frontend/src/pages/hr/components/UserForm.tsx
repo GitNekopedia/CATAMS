@@ -39,7 +39,7 @@ const UserForm: React.FC<Props> = ({ initialValues, onSubmit, onCancel }) => {
       form={form}
       layout="vertical"
       onFinish={handleFinish}
-      initialValues={initialValues}
+      initialValues={initialValues || undefined}
     >
       {/* Name */}
       <Form.Item
