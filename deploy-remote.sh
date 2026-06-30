@@ -31,6 +31,10 @@ echo "📥 拉取新镜像 (version: $TAG)..."
 docker pull $DOCKER_USER/$PROJECT_NAME-backend:$TAG
 docker pull $DOCKER_USER/$PROJECT_NAME-frontend:$TAG
 
+# docker-compose.prod.yml runs the latest tags; pin latest to the requested version.
+docker tag $DOCKER_USER/$PROJECT_NAME-backend:$TAG $DOCKER_USER/$PROJECT_NAME-backend:latest
+docker tag $DOCKER_USER/$PROJECT_NAME-frontend:$TAG $DOCKER_USER/$PROJECT_NAME-frontend:latest
+
 # ========== 启动新容器 ==========
 echo "🚀 启动新容器..."
 docker-compose -f $COMPOSE_FILE up -d --force-recreate
