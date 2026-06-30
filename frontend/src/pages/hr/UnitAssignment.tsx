@@ -49,12 +49,8 @@ const UnitAssignment: React.FC = () => {
   const fetchAssignments = async () => {
     setLoading(true);
     try {
-      const res = await getAssignments(filters);
-      if (res.success) {
-        setAssignments(Array.isArray(res.data) ? res.data : []);
-      } else {
-        message.error(res.message);
-      }
+      const data = await getAssignments(filters); // ✅ 拦截器返回纯业务数据
+      setAssignments(Array.isArray(data) ? data : []);
     } catch {
       message.error(intl.formatMessage({ id: 'hr.unitAssignment.message.loadFail' }));
     } finally {
@@ -64,44 +60,45 @@ const UnitAssignment: React.FC = () => {
 
   useEffect(() => {
     fetchAssignments();
-    getAllCourses().then(res => setCourses(res?.data?.list || []));
-    getAllUsers().then(res => setUsers(res?.data || []));
+
+    // ✅ 获取课程和用户数据
+    getAllCourses()
+      .then((res) => setCourses(res?.list || []))
+      .catch(() => message.error(intl.formatMessage({ id: 'hr.unitAssignment.message.loadCourseFail' })));
+
+    getAllUsers()
+      .then((res) => setUsers(res || []))
+      .catch(() => message.error(intl.formatMessage({ id: 'hr.unitAssignment.message.loadUserFail' })));
   }, []);
 
   /** ==== CRUD ==== */
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
-      const res = editing
-        ? await updateAssignment(editing.id, values)
-        : await createAssignment(values);
-
-      if (res.success) {
-        message.success(
-          intl.formatMessage({
-            id: editing
-              ? 'hr.unitAssignment.message.updateSuccess'
-              : 'hr.unitAssignment.message.createSuccess',
-          }),
-        );
-        setModalVisible(false);
-        setEditing(null);
-        fetchAssignments();
+      if (editing) {
+        await updateAssignment(editing.id, values);
+        message.success(intl.formatMessage({ id: 'hr.unitAssignment.message.updateSuccess' }));
       } else {
-        message.error(res.message);
+        await createAssignment(values);
+        message.success(intl.formatMessage({ id: 'hr.unitAssignment.message.createSuccess' }));
       }
+
+      setModalVisible(false);
+      setEditing(null);
+      fetchAssignments();
     } catch (err) {
       console.error(err);
+      message.error(intl.formatMessage({ id: 'hr.unitAssignment.message.saveFail' }));
     }
   };
 
   const handleDelete = async (id: number) => {
-    const res = await deleteAssignment(id);
-    if (res.success) {
+    try {
+      await deleteAssignment(id);
       message.success(intl.formatMessage({ id: 'hr.unitAssignment.message.deleteSuccess' }));
       fetchAssignments();
-    } else {
-      message.error(res.message);
+    } catch {
+      message.error(intl.formatMessage({ id: 'hr.unitAssignment.message.deleteFail' }));
     }
   };
 
@@ -131,10 +128,6 @@ const UnitAssignment: React.FC = () => {
         { text: 'Marker', value: 'MARKER' },
       ],
       onFilter: (value: string, record: Assignment) => record.role === value,
-    },
-    {
-      title: intl.formatMessage({ id: 'hr.unitAssignment.table.payRate' }),
-      dataIndex: 'payRate',
     },
     {
       title: intl.formatMessage({ id: 'hr.unitAssignment.table.quotaHours' }),

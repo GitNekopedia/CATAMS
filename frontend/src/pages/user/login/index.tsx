@@ -27,7 +27,7 @@ import { Footer } from '@/components';
 import { login } from '@/services/ant-design-pro/api';
 import { getFakeCaptcha } from '@/services/ant-design-pro/login';
 import Settings from '../../../../config/defaultSettings';
-import { useNavigate } from '@umijs/max';
+import { useNavigate, useSearchParams } from '@umijs/max';
 
 const useStyles = createStyles(({ token }) => {
   return {
@@ -58,9 +58,11 @@ const useStyles = createStyles(({ token }) => {
       flexDirection: 'column',
       height: '100vh',
       overflow: 'auto',
-      backgroundImage:
-        "url('https://mdn.alipayobjects.com/yuyan_qk0oxh/afts/img/V-_oS6r-i7wAAAAAAAAAAAAAFl94AQBr')",
-      backgroundSize: '100% 100%',
+      /* 使用本地静态资源替代远程大图，减小首屏网络开销 */
+      backgroundImage: "url('/login-bg.jpg')",
+      backgroundSize: 'cover',
+      backgroundPosition: 'center center',
+      backgroundRepeat: 'no-repeat',
     },
   };
 });
@@ -119,6 +121,7 @@ const Login: React.FC = () => {
   const { message } = App.useApp();
   const intl = useIntl();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
 
   const fetchUserInfo = async () => {
@@ -134,20 +137,27 @@ const Login: React.FC = () => {
   };
 
   const handleSubmit = async (values: API.LoginParams) => {
-    try {
       // 登录
-      const res = await login(values);
-      console.log(res);
-      if (res.message === "OK") {
-        localStorage.setItem('token', res.data.token);
-        const userInfo = res.data.user;        console.log(userInfo)
+      // let res = await login(values);
+      // console.log(res);
+      const { token, user } = await login(values); // ✅ 拦截器直接返回 data.data
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      message.success('登录成功');
+
         flushSync(() => {
-          setInitialState((s) => ({ ...s, currentUser: userInfo }));
+          setInitialState((s) => ({ ...s, currentUser: user }));
         });
 
-          // 根据角色跳转不同页面
-        const role = userInfo.role;
-        switch (role) {
+        // ✅ 优先检查是否有 redirect 参数（用于从 mood 模块跳转回来）
+        const redirect = searchParams.get('redirect');
+        if (redirect) {
+          navigate(decodeURIComponent(redirect));
+          return;
+        }
+
+        // 根据角色跳转不同页面
+        switch (user.role) {
           case 'Tutor':
             navigate('/tutor/Dashboard');
             break;
@@ -162,17 +172,6 @@ const Login: React.FC = () => {
           return;
         }
 
-        // 如果失败去设置用户错误信息
-        setUserLoginState(res);
-      }
-    } catch (error) {
-      const defaultLoginFailureMessage = intl.formatMessage({
-        id: 'pages.login.failure',
-        defaultMessage: '登录失败，请重试！',
-      });
-      console.log(error);
-      message.error(defaultLoginFailureMessage);
-    }
   };
   const { status, type: loginType } = userLoginState;
 

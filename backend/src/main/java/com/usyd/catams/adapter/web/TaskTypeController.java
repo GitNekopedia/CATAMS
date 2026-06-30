@@ -1,66 +1,74 @@
 package com.usyd.catams.adapter.web;
 
-import com.usyd.catams.adapter.web.dto.ApiResponse;
 import com.usyd.catams.adapter.web.dto.TaskTypeDTO;
 import com.usyd.catams.adapter.web.dto.TaskTypeRequest;
 import com.usyd.catams.application.service.TaskTypeService;
+import com.usyd.catams.infrastructure.exception.ApiResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 任务类型管理接口（已由 AuthInterceptor 拦截 Token）
+ */
 @RestController
 @RequestMapping("/api/task-types")
+@RequiredArgsConstructor
 public class TaskTypeController {
 
     private final TaskTypeService taskTypeService;
 
-    public TaskTypeController(TaskTypeService taskTypeService) {
-        this.taskTypeService = taskTypeService;
-    }
-
-    // Create
+    /**
+     * 创建任务类型
+     */
     @PostMapping
     public ApiResponse<TaskTypeDTO> create(@RequestBody TaskTypeRequest req) {
-        try {
-            TaskTypeDTO type = taskTypeService.createTaskType(req.getUnitId(), req.getName(), req.getPhdPayRate(), req.getNonPhdPayRate());
-            return ApiResponse.ok(type);
-        } catch (IllegalArgumentException e) {
-            return ApiResponse.fail(e.getMessage());
-        }
+        var type = taskTypeService.createTaskType(
+                req.getUnitId(),
+                req.getName(),
+                req.getPhdPayRate(),
+                req.getNonPhdPayRate()
+        );
+        return ApiResponse.ok(type);
     }
 
-    // Read (by ID)
+    /**
+     * 根据 ID 查询任务类型
+     */
     @GetMapping("/{id}")
     public ApiResponse<TaskTypeDTO> get(@PathVariable Long id) {
-        TaskTypeDTO type = taskTypeService.getTaskType(id);
-        return type != null ? ApiResponse.ok(type) : ApiResponse.fail("Not found");
+        var type = taskTypeService.getTaskType(id);
+        if (type == null) {
+            throw new IllegalArgumentException("Task type not found with id: " + id);
+        }
+        return ApiResponse.ok(type);
     }
 
-    // Read (by Unit)
+    /**
+     * 根据课程查询任务类型列表
+     */
     @GetMapping("/unit/{unitId}")
     public ApiResponse<List<TaskTypeDTO>> getByUnit(@PathVariable Long unitId) {
-        return ApiResponse.ok(taskTypeService.getTaskTypesByUnit(unitId));
+        var types = taskTypeService.getTaskTypesByUnit(unitId);
+        return ApiResponse.ok(types);
     }
 
-    // Update
+    /**
+     * 更新任务类型
+     */
     @PutMapping("/{id}")
     public ApiResponse<TaskTypeDTO> update(@PathVariable Long id, @RequestBody TaskTypeRequest req) {
-        try {
-            TaskTypeDTO type = taskTypeService.updateTaskType(id, req.getName());
-            return ApiResponse.ok(type);
-        } catch (IllegalArgumentException e) {
-            return ApiResponse.fail(e.getMessage());
-        }
+        var updated = taskTypeService.updateTaskType(id, req.getName());
+        return ApiResponse.ok(updated);
     }
 
-    // Delete
+    /**
+     * 删除任务类型
+     */
     @DeleteMapping("/{id}")
     public ApiResponse<String> delete(@PathVariable Long id) {
-        try {
-            taskTypeService.deleteTaskType(id);
-            return ApiResponse.ok("Deleted");
-        } catch (IllegalArgumentException e) {
-            return ApiResponse.fail(e.getMessage());
-        }
+        taskTypeService.deleteTaskType(id);
+        return ApiResponse.ok("Deleted");
     }
 }

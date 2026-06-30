@@ -26,13 +26,6 @@ public interface UnitAssignmentMapper extends BaseMapper<UnitAssignment> {
     List<TutorCourseDTO> findTutorCourses(@Param("tutorId") Long tutorId);
 
 
-    @Select("""
-            SELECT pay_rate 
-            FROM unit_assignment 
-            WHERE user_id=#{tutorId} AND unit_id=#{unitId} AND role = 'TUTOR' LIMIT 1                                                                                                              
-            """)
-    BigDecimal findPayRate(Long tutorId, Long unitId);
-
 
     @Select("""
             SELECT ua.id,

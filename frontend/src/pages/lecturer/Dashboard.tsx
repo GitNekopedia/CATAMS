@@ -13,17 +13,13 @@ import {
 import TopBannerLecturer from '@/components/common/TopBanner/TopBannerLecturer';
 import CourseCardsLecturer from '@/components/common/CourseCards/CourseCardsLecturer';
 import ActivityLecturer from '@/components/common/Activity/ActivityLecturer';
+import {getLecturerOverview} from "@/services/lecturer/dashboardService";
 
 const LecturerDashboard: React.FC = () => {
   const intl = useIntl();
   const [courses, setCourses] = useState<API.LecturerCourse[]>([]);
   const [entries, setEntries] = useState<API.LecturerPendingWorkEntry[]>([]);
-  const [stats, setStats] = useState<API.StatData>({
-    workCount: 0,
-    remainingBudget: 0,
-    approvalProgress: 0,
-  });
-  const [approvals, setApprovals] = useState<API.LecturerPendingWorkEntry[]>([]);
+  const [overview, setOverview] = useState<API.LecturerOverView | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -31,35 +27,28 @@ const LecturerDashboard: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const [courseRes, entryRes, statRes, approvalRes] = await Promise.all([
+      // ✅ Promise.all 直接返回业务数据
+      const [coursesRes, entriesRes, overviewRes] = await Promise.all([
         getLecturerCourses(),
         getLecturerEntries(),
-        getLecturerStats(),
-        getPendingApprovals(),
+        getLecturerOverview(),
       ]);
 
-      if (courseRes.success) setCourses(courseRes.data);
-      else message.error(courseRes.message);
-
-      if (entryRes.success) setEntries(entryRes.data);
-      else message.error(entryRes.message);
-
-      if (statRes.success) setStats(statRes.data);
-      else message.error(statRes.message);
-
-      if (approvalRes.success) setApprovals(approvalRes.data);
-      else message.error(approvalRes.message);
+      setCourses(coursesRes || []);
+      setEntries(entriesRes || []);
+      setOverview(overviewRes || null);
     } catch (err) {
       console.error(err);
       message.error(intl.formatMessage({ id: 'dashboard.loadFail' }));
     }
   };
 
+
   return (
     <DashboardLayout
       topBanner={
         <div style={{ marginBottom: 24 }}>
-          <TopBannerLecturer courses={courses} />
+          <TopBannerLecturer overview={overview} />
         </div>
       }
       main={
@@ -70,8 +59,7 @@ const LecturerDashboard: React.FC = () => {
       }
       side={
         <>
-          <StatCards stats={stats} />
-          <PendingApprovals approvals={approvals} />
+          <StatCards overview={overview} role={'LECTURER'} />
         </>
       }
     />

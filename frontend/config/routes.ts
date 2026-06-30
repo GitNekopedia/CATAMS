@@ -15,7 +15,7 @@ export default [
   {
     path: '/hr/dashboard',
     name: 'HR Dashboard',
-    component: './tutor/Dashboard',
+    component: './hr/Dashboard',
     access: 'canHR'
   },
   {
@@ -43,6 +43,14 @@ export default [
     access: 'canHR'
   },
   {
+    path: '/hr/payroll',
+    name: 'Payroll Manage',
+    component: './hr/HRPayroll',
+    access: 'canHR',
+  },
+
+
+  {
     path: '/tutor/dashboard',
     name: 'Tutor Dashboard',
     component: './tutor/Dashboard',
@@ -61,6 +69,14 @@ export default [
     access: 'canTutor'
   },
   {
+    path: '/tutor/payroll',
+    name: 'My Payroll',
+    component: './tutor/TutorPayrollPage',
+    access: 'canTutor'
+  },
+
+
+  {
     path: '/lecturer/dashboard',
     name: 'Lecturer Dashboard',
     component: './lecturer/Dashboard',
@@ -78,6 +94,27 @@ export default [
     component: './lecturer/DetailedLecturerPendingApprovals',
     access: 'canLecturer',
   },
+  {
+    path: '/mood',
+    layout: false,
+    component: './mood/MoodLayout',
+    routes: [
+      {
+        path: 'login', // ✅ 相对路径，不加 / 才会成为子路由
+        name: 'Mood Login',
+        component: './mood/login',
+        hideInMenu: true,
+      },
+      {
+        path: '', // ✅ 表示 /mood 自身
+        name: 'Mood Tracker',
+        icon: 'smile',
+        component: './mood/index',
+        hideInMenu: true,
+      },
+    ],
+  },
+
   {
     path: '/user',
     layout: false,

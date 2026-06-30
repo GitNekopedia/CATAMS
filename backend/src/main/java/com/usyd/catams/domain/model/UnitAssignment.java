@@ -13,8 +13,6 @@ public class UnitAssignment {
     private Long unitId;
     private Long userId;
     private String role; // Lecturer / Tutor / HR
-    private BigDecimal payRate;
-    private BigDecimal quotaHours;
     private LocalDateTime createdAt;
 
 }

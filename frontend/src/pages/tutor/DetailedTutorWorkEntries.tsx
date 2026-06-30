@@ -14,13 +14,15 @@ const DetailedTutorWorkEntries: React.FC = () => {
   }, []);
 
   const fetchData = async () => {
-    const res = await getAllTutorEntries();
-    if (res.success) {
-      setEntries(res.data || []);
-    } else {
-      message.error(res.message || intl.formatMessage({ id: 'approvals.message.loadFail' }));
+    try {
+      const entries = await getAllTutorEntries();
+      setEntries(entries || []);
+    } catch (err) {
+      console.error(err);
+      message.error(intl.formatMessage({ id: 'approvals.message.loadFail' }));
     }
   };
+
 
   const columns = [
     { title: intl.formatMessage({ id: 'approvals.col.unit' }), dataIndex: 'unitName', key: 'unitName' },

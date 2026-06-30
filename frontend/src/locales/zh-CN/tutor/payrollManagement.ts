@@ -1,0 +1,43 @@
+export default {
+  // Tutor Payroll Page
+  'tutor.payroll.page.title': '我的工资收入',
+  'tutor.payroll.data.error': '加载工资数据失败',
+  'tutor.payroll.card.month': '月份',
+  'tutor.payroll.card.totalHours': '总工时',
+  'tutor.payroll.card.totalIncome': '总收入',
+  'tutor.payroll.table.month': '月份',
+  'tutor.payroll.table.totalHours': '总工时 (h)',
+  'tutor.payroll.table.totalIncome': '总收入 ($)',
+  'tutor.payroll.button.viewDetail': '查看明细',
+  'tutor.payroll.modal.title': '{month} 收入明细',
+  'tutor.payroll.detail.unitCode': '课程代码',
+  'tutor.payroll.detail.unitName': '课程名称',
+  'tutor.payroll.detail.taskName': '任务名称',
+  'tutor.payroll.detail.weekStart': '周起始日期',
+  'tutor.payroll.detail.hours': '工时',
+  'tutor.payroll.detail.payRate': '时薪',
+  'tutor.payroll.detail.amount': '金额',
+  'tutor.payroll.detail.error': '加载收入明细失败',
+  'tutor.payroll.detail.tableTitle': '{month} 收入明细',
+  'tutor.payroll.tab.detail': '工资明细',
+  'tutor.payroll.tab.analytics': '统计分析',
+  'tutor.payroll.chart.courseShare': '各课程收入占比',
+  'tutor.payroll.tab.summary': '月度统计',
+  'tutor.payroll.tab.trend': '年度趋势',
+  'tutor.payroll.chart.yearTrend': '年度收入趋势',
+  'tutor.payroll.chart.courseIncome': '课程收入柱状图',
+  'tutor.payroll.chart.courseIncome.label': '收入 ($)',
+
+  // --- Tutor Payroll Yearly Trend ---
+  'tutor.payroll.chart.axis.month': '月份',
+  'tutor.payroll.chart.axis.income': '收入 ($)',
+  'tutor.payroll.chart.tooltip.income': '收入',
+  'tutor.payroll.chart.legend.income': '总收入',
+
+
+  'tutor.payroll.tab.yearDetail': '年度明细',
+  'tutor.payroll.yearDetail.title': '年度收入明细',
+  'tutor.payroll.detail.month': '月份',
+  'tutor.payroll.detail.totalHours': '总工时',
+  'tutor.payroll.detail.totalIncome': '总收入 ($)',
+};

@@ -1,73 +1,58 @@
 package com.usyd.catams.adapter.web;
 
-import com.usyd.catams.adapter.persistence.CourseUnitMapper;
-import com.usyd.catams.adapter.persistence.WorkEntryMapper;
 import com.usyd.catams.adapter.web.dto.*;
 import com.usyd.catams.application.query.CourseQueryService;
 import com.usyd.catams.application.query.WorkEntryQueryService;
-import com.usyd.catams.application.service.AuthTokenService;
-import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import com.usyd.catams.application.service.LecturerDashBoardService;
+import com.usyd.catams.infrastructure.exception.ApiResponse;
+import com.usyd.catams.infrastructure.security.AuthUserContext;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Lecturer 个人工作台接口
+ * 已由 AuthInterceptor 校验 Token。
+ */
 @RestController
 @RequestMapping("/api/lecturer")
+@RequiredArgsConstructor
 public class LecturerDashboardController {
 
-    private final AuthTokenService tokenService;
-    private final CourseUnitMapper courseUnitMapper;
-    private final WorkEntryMapper workEntryMapper;
     private final CourseQueryService courseQueryService;
     private final WorkEntryQueryService workEntryQueryService;
+    private final LecturerDashBoardService lecturerDashboardService;
 
-    public LecturerDashboardController(AuthTokenService tokenService,
-                                       CourseUnitMapper courseUnitMapper,
-                                       WorkEntryMapper workEntryMapper,
-                                       CourseQueryService courseQueryService,
-                                       WorkEntryQueryService workEntryQueryService) {
-        this.tokenService = tokenService;
-        this.courseUnitMapper = courseUnitMapper;
-        this.workEntryMapper = workEntryMapper;
-        this.courseQueryService = courseQueryService;
-        this.workEntryQueryService = workEntryQueryService;
-    }
-
+    /**
+     * 获取讲师的课程列表
+     */
     @GetMapping("/courses")
-    public ApiResponse<List<LecturerCourseDTO>> getLecturerCourses(HttpServletRequest request) {
-        var user = tokenService.extractUserFromRequest(request);
-        if (user == null) return ApiResponse.fail("Unauthorized");
-        return ApiResponse.ok(courseQueryService.findLecturerCourses(user.getId()));
+    public ApiResponse<List<LecturerCourseDTO>> getLecturerCourses() {
+        var user = AuthUserContext.get(); // ✅ 拿当前登录讲师
+        var courses = courseQueryService.findLecturerCourses(user.getId());
+        return ApiResponse.ok(courses);
     }
 
-    @GetMapping("/entries")
-    public ApiResponse<List<LecturerPendingWorkEntryDTO>> getRecentWorkEntries(HttpServletRequest request,
-                                                                @RequestParam(defaultValue = "10") int limit
+    /**
+     * 获取讲师最近的工时记录
+     */
+    @GetMapping("/recent-entries")
+    public ApiResponse<List<LecturerPendingWorkEntryDTO>> getRecentWorkEntries(
+            @RequestParam(defaultValue = "5") int limit
     ) {
-        var user = tokenService.extractUserFromRequest(request);
-        if (user == null) return ApiResponse.fail("Unauthorized");
-        try {
-            List<LecturerPendingWorkEntryDTO> list = workEntryQueryService.listRecentByLecturer(user.getId(), limit);
-            return ApiResponse.ok(list);
-        } catch (Exception e) {
-            return ApiResponse.fail(e.getMessage());
-        }
+        var user = AuthUserContext.get();
+        var entries = workEntryQueryService.listRecentByLecturer(user.getId(), limit);
+        return ApiResponse.ok(entries);
     }
 
-    @GetMapping("/stats")
-    public ApiResponse<StatData> getStats(HttpServletRequest request) {
-        var user = tokenService.extractUserFromRequest(request);
-        if (user == null) return ApiResponse.fail("Unauthorized");
-
-        int workCount = workEntryMapper.countByLecturerId(user.getId());
-        double remainingBudget = courseUnitMapper.totalRemainingBudget(user.getId());
-        // double approvalProgress = workEntryMapper.approvalProgress(user.getId());
-
-        return ApiResponse.ok(new StatData(workCount, remainingBudget, 1));
+    /**
+     * 获取讲师仪表盘总体数据
+     */
+    @GetMapping("/overview")
+    public ApiResponse<LecturerOverviewDTO> getStats() {
+        var user = AuthUserContext.get();
+        var overview = lecturerDashboardService.getLecturerOverview(user.getId());
+        return ApiResponse.ok(overview);
     }
-
-
 }

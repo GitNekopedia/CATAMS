@@ -14,12 +14,12 @@ const UserManagement: React.FC = () => {
   const [editingUser, setEditingUser] = useState<API.User | null>(null);
   const [formVisible, setFormVisible] = useState(false);
 
+  /** ✅ 获取用户列表 */
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await getUserList({ role: roleFilter, keyword: searchKeyword });
-      if (res.success) setUsers(res.data);
-      else message.error(res.message);
+      const data = await getUserList({ role: roleFilter, keyword: searchKeyword });
+      setUsers(data || []);
     } catch {
       message.error(intl.formatMessage({ id: 'hr.userManagement.message.loadFail' }));
     } finally {
@@ -31,32 +31,33 @@ const UserManagement: React.FC = () => {
     fetchData();
   }, [roleFilter, searchKeyword]);
 
+  /** ✅ 删除用户 */
   const handleDelete = async (id: number) => {
-    const res = await deleteUser(id);
-    if (res.success) {
+    try {
+      await deleteUser(id);
       message.success(intl.formatMessage({ id: 'hr.userManagement.message.deleteSuccess' }));
       fetchData();
-    } else message.error(res.message);
+    } catch {
+      message.error(intl.formatMessage({ id: 'hr.userManagement.message.deleteFail' }));
+    }
   };
 
+  /** ✅ 新建或编辑用户 */
   const handleSave = async (values: API.UserForm) => {
-    const res = editingUser
-      ? await updateUser(editingUser.id, values)
-      : await createUser(values);
+    try {
+      if (editingUser) {
+        await updateUser(editingUser!.id!, values);
+        message.success(intl.formatMessage({ id: 'hr.userManagement.message.updateSuccess' }));
+      } else {
+        await createUser(values);
+        message.success(intl.formatMessage({ id: 'hr.userManagement.message.createSuccess' }));
+      }
 
-    if (res.success) {
-      message.success(
-        intl.formatMessage({
-          id: editingUser
-            ? 'hr.userManagement.message.updateSuccess'
-            : 'hr.userManagement.message.createSuccess',
-        }),
-      );
       setFormVisible(false);
       setEditingUser(null);
       fetchData();
-    } else {
-      message.error(res.message || intl.formatMessage({ id: 'hr.userManagement.message.actionFail' }));
+    } catch {
+      message.error(intl.formatMessage({ id: 'hr.userManagement.message.actionFail' }));
     }
   };
 
@@ -97,7 +98,7 @@ const UserManagement: React.FC = () => {
           </Button>
           <Popconfirm
             title={intl.formatMessage({ id: 'hr.userManagement.table.confirmDelete' })}
-            onConfirm={() => handleDelete(record.id)}
+            onConfirm={() => handleDelete(record.id!)}
           >
             <Button type="link" danger>
               {intl.formatMessage({ id: 'hr.userManagement.table.delete' })}

@@ -5,16 +5,20 @@ import pages from './zh-CN/pages';
 import pwa from './zh-CN/pwa';
 import settingDrawer from './zh-CN/settingDrawer';
 import settings from './zh-CN/settings';
+import tutorPayroll from './zh-CN/tutor/payrollManagement';
 import hrUnitAssignment from "@/locales/zh-CN/hr/unitAssignment";
 import hrAssignmentForm from "@/locales/zh-CN/hr/components/assignmentForm";
 import hrCourseForm from "@/locales/zh-CN/hr/components/courseForm";
 import hrUserForm from "@/locales/zh-CN/hr/components/userForm";
 import hrCourseManagement from "@/locales/zh-CN/hr/courseManagement";
 import hrUserManagement from "@/locales/zh-CN/hr/userManagement";
+import hrPayrollManagement from "@/locales/zh-CN/hr/payrollManagement";
+import hrDashboard from "@/locales/zh-CN/hr/dashboard"
 
 
 export default {
   'navBar.lang': '语言',
+  'navbar.user.default': '访客',
   'layout.user.link.help': '帮助',
   'layout.user.link.privacy': '隐私',
   'layout.user.link.terms': '条款',
@@ -29,8 +33,11 @@ export default {
   'topBanner.role.lecturer': '课程负责人 | CATAMS 平台',
   'topBanner.role.tutor': '助教 | CATAMS 平台',
   'topBanner.stat.courses': '课程数',
-  'topBanner.stat.rank': '团队内排名',
-  'topBanner.stat.visits': '项目访问',
+  'topBanner.stat.pendingApprovals': '待审批工时数',
+  'topBanner.stat.budgetUsage': '预算使用率',
+  'topBanner.stat.totalQuotaHours': '总计通过课时',
+  'topBanner.stat.approvalRate': '课时提交通过率',
+
 
   'greeting.morning': '早安',
   'greeting.noon': '中午好',
@@ -64,6 +71,8 @@ export default {
   'activity.lecturer.approve': '通过',
   'activity.lecturer.reject': '驳回',
   'activity.lecturer.unknownTutor': '未知',
+  'activity.lecturer.view': '查看',
+
 
   // ActivityTutor
   'activity.tutor.title': 'Tutor 工时提交',
@@ -86,6 +95,15 @@ export default {
   'activity.tutor.error.noAllocation': '未找到对应的任务分配',
   'activity.tutor.plannedHours': '分配时长',
   'activity.tutor.weekStart': '开始周',
+  'activity.tutor.updatedAt': '更新时间',
+  'activity.tutor.status': '状态',
+
+  // activity.tutor.status
+  'status.draft': '草稿',
+  'status.submitted': '成功提交',
+  'status.approvedByLecturer': '讲师通过',
+  'status.finalApproved': '最终通过',
+  'status.rejected': '已驳回',
 
 
   // PendingApprovals
@@ -96,8 +114,12 @@ export default {
 
   // StatCards
   'statCards.submittedHours': '已提交工时',
+  'statCards.approvedWorkEntries': '已通过审批工时',
   'statCards.remainingBudget': '剩余预算',
   'statCards.approvalRate': '审批通过率',
+  'statCards.approvedCount': '已批准条数',
+  'statCards.unsubmittedWorkEntries': '待提交工时数',
+
 
   // DetailedLecturerPendingApprovals
   'approvals.header': '待审批工时记录',
@@ -154,6 +176,9 @@ export default {
   'unitAlloc.message.taskCreated': '任务已创建',
   'unitAlloc.message.requestFail': '请求失败，请检查后端接口',
   'unitAlloc.allUnits': '所有课程',
+  'unitAlloc.message.deleteConfirm': '确认删除此任务吗？',
+
+
 
   "unitAlloc.phdPayRate": "博士薪酬标准",
   "unitAlloc.nonPhdPayRate": "非博士薪酬标准",
@@ -193,5 +218,7 @@ export default {
   ...hrUserForm,
   ...hrCourseManagement,
   ...hrUserManagement,
-
+  ...hrPayrollManagement,
+  ...tutorPayroll,
+  ...hrDashboard,
 };

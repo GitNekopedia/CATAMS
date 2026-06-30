@@ -5,16 +5,22 @@ import pages from './en-US/pages';
 import pwa from './en-US/pwa';
 import settingDrawer from './en-US/settingDrawer';
 import settings from './en-US/settings';
+import tutorPayroll from './en-US/tutor/payrollManagement';
 import hrUnitAssignment from "@/locales/en-US/hr/unitAssignment";
 import hrAssignmentForm from "@/locales/en-US/hr/components/assignmentForm";
 import hrCourseForm from "@/locales/en-US/hr/components/courseForm";
 import hrUserForm from "@/locales/en-US/hr/components/userForm";
 import hrCourseManagement from "@/locales/en-US/hr/courseManagement";
 import hrUserManagement from "@/locales/en-US/hr/userManagement";
+import hrPayrollManagement from "@/locales/en-US/hr/payrollManagement";
+import hrDashboard from "@/locales/en-US/hr/dashboard"
+
+
 
 
 export default {
   'navBar.lang': 'Languages',
+  'navbar.user.default': 'Guest',
   'layout.user.link.help': 'Help',
   'layout.user.link.privacy': 'Privacy',
   'layout.user.link.terms': 'Terms',
@@ -30,8 +36,11 @@ export default {
   'topBanner.role.lecturer': 'Course Coordinator | CATAMS Platform',
   'topBanner.role.tutor': 'Tutor | CATAMS Platform',
   'topBanner.stat.courses': 'Courses',
-  'topBanner.stat.rank': 'Team Rank',
-  'topBanner.stat.visits': 'Project Visits',
+  'topBanner.stat.pendingApprovals': 'Pending Approvals',
+  'topBanner.stat.budgetUsage': 'Budget Usage',
+  'topBanner.stat.totalQuotaHours': 'Total Quota Hours',
+  'topBanner.stat.approvalRate': 'Approval Rate',
+
 
   'greeting.morning': 'Good morning',
   'greeting.noon': 'Good noon',
@@ -65,6 +74,7 @@ export default {
   'activity.lecturer.approve': 'Approve',
   'activity.lecturer.reject': 'Reject',
   'activity.lecturer.unknownTutor': 'Unknown',
+  'activity.lecturer.view': 'View',
 
   // ActivityTutor
   'activity.tutor.title': 'Tutor Work Submission',
@@ -87,6 +97,17 @@ export default {
   'activity.tutor.error.noAllocation': 'No corresponding allocation found',
   'activity.tutor.plannedHours': 'Planned Hours',
   'activity.tutor.weekStart': 'Week Start',
+  'activity.tutor.updatedAt': 'Update At',
+  'activity.tutor.status': 'Status',
+
+  // activity.tutor.status
+  'status.draft': 'Draft',
+  'status.submitted': 'Submitted successfully',
+  'status.approvedByLecturer': 'Approved By Lecturer',
+  'status.finalApproved': 'Final Approved',
+  'status.rejected': 'Rejected',
+
+
 
   // PendingApprovals
   'pendingApprovals.header': 'Pending Approvals',
@@ -96,8 +117,13 @@ export default {
 
   // StatCards
   'statCards.submittedHours': 'Submitted Hours',
+  'statCards.approvedWorkEntries': 'Approved Work Entries',
   'statCards.remainingBudget': 'Remaining Budget',
   'statCards.approvalRate': 'Approval Rate',
+  'statCards.approvedCount': 'Approved Count',
+  'statCards.unsubmittedWorkEntries': 'Unsubmitted Work Entries',
+
+
 
   // DetailedLecturerPendingApprovals
   'approvals.header': 'Pending Work Entries',
@@ -154,6 +180,9 @@ export default {
   'unitAlloc.message.taskCreated': 'Task created',
   'unitAlloc.message.requestFail': 'Request failed, check backend API',
   'unitAlloc.allUnits': 'All Courses',
+  'unitAlloc.message.deleteConfirm': 'Are you sure you want to delete this task?',
+
+
 
   "unitAlloc.phdPayRate": "PhD Pay Rate",
   "unitAlloc.nonPhdPayRate": "Non-PhD Pay Rate",
@@ -183,11 +212,14 @@ export default {
   ...pwa,
   ...component,
   ...pages,
+  ...tutorPayroll,
   ...hrUnitAssignment,
   ...hrAssignmentForm,
   ...hrCourseForm,
   ...hrUserForm,
   ...hrCourseManagement,
   ...hrUserManagement,
+  ...hrPayrollManagement,
+  ...hrDashboard,
 
 };

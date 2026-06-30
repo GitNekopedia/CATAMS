@@ -36,60 +36,19 @@ public class WorkEntryQueryService {
     }
 
     public List<WorkEntryDTO> listRecentByTutor(Long tutorId, int limit) {
-        List<Long> ids = Collections.emptyList();
         List<WorkEntryDTO> result = new ArrayList<>();
 
-        try {
-            // 1) 尝试从 Redis 获取 ID 列表
-            ids = weCache.getTutorRecentIds(tutorId, limit);
-            log.info("Redis cache hit for tutor {}: {}", tutorId, ids);
+        // 直接从数据库查
+        var entries = workEntryMapper.findRecentByTutor(tutorId, limit);
 
-            // 2) 命中 DTO 缓存的先拿
-            Set<Long> miss = new HashSet<>();
-            for (Long id : ids) {
-                try {
-                    var dto = weCache.getEntryDTO(id);
-                    if (dto == null || dto.getStatus() == null) {
-                        miss.add(id);
-                        continue;
-                    }
-                    result.add(dto);
-                } catch (Exception e) {
-                    // 单个 DTO 获取失败，加入 miss 集
-                    miss.add(id);
-                    log.warn("Failed to get DTO from cache for id: {}", tutorId.toString(), e.toString());
-                }
-            }
-
-            // 3) 对 miss 的部分查库
-            if (!miss.isEmpty()) {
-                processMissIds(miss, result);
-            }
-        } catch (Exception e) {
-            // Redis 整体不可用，记录日志但继续执行
-            log.warn("Redis unavailable, falling back to database", e);
+        for (var entry : entries) {
+            var dto = toDTO(entry, "TUTOR");
+            result.add(dto);
         }
 
-        // 4) 如果 Redis 没有数据或不可用，直接从 DB 查
-        if (ids.isEmpty() || result.isEmpty()) {
-            var entries = workEntryMapper.findRecentByTutor(tutorId, limit);
-            for (var entry : entries) {
-                var dto = toDTO(entry, "TUTOR");
-
-                // 尝试回填缓存，但忽略错误
-                try {
-                    weCache.cacheEntryDTO(dto);
-                    weCache.pushTutorRecent(tutorId, entry.getId(), entry.getCreatedAt());
-                } catch (Exception ex) {
-                    log.warn("Failed to populate cache", ex);
-                }
-
-                result.add(dto);
-            }
-        }
-
-        // 5) 按时间排序
+        // 按时间降序排序（最新的在前）
         result.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
+
         return result;
     }
 

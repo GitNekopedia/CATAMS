@@ -1,5 +1,52 @@
 declare namespace API {
 
+  type HrOverview = {
+    totalCourses: number;
+    totalTutors: number;
+    pendingApprovals: number;
+    totalBudget: number;
+  };
+
+  type TutorIncomeDetail = {
+    entryId: number;
+    unitCode: string;
+    unitName: string;
+    taskName: string;
+    weekStart: string; // 日期字符串
+    hours: number;
+    payRate: number;
+    amount: number;
+  };
+
+  type TutorIncome = {
+    tutorId: number;
+    tutorName: string;
+    month: string;
+    totalHours: number;
+    totalIncome: number;
+  };
+
+  // BaseOverview
+  type BaseOverview = {
+    courseCount: number;
+    pendingCount: number;
+    approvedCount: number;
+    approvalRate: number;
+  };
+
+// Lecturer
+  type LecturerOverView = BaseOverview & {
+    averageBudgetUsage?: number;
+    totalRemainingBudget: number;
+  };
+
+// Tutor
+  type TutorOverView = BaseOverview & {
+    unsubmittedWorkEntries: number;
+    totalQuotaHours: number;
+  };
+
+
   /** 用户表单字段 */
   type UserForm = {
     name: string;
@@ -142,7 +189,7 @@ declare namespace API {
     weekStart: string;         // YYYY-MM-DD
     hours: number;             // 实际工时
     description?: string;      // 备注
-    substituteTutorId?: number;// 代课时必填，否则后端默认用自己
+    substitute: boolean;
   };
 
   type LecturerCourse = {
@@ -216,6 +263,15 @@ declare namespace API {
     approvalProgress: number; // 小数，前端显示可乘以100加上 %
   };
 
+  type UserEntity = {
+    id: number;
+    name: string;
+    email: string;
+    role: string; // Lecturer / Tutor / HR / Admin
+    createdAt: string;
+    updatedAt: string;
+  }
+
   type CurrentUser = {
     id: number;
     name: string;
@@ -236,5 +292,27 @@ declare namespace API {
     success: boolean;
     message: string;
     data: T;
+    error?: string;
   };
+
+  type Mood = {
+    id: number;
+    userId: number;
+    moodScore: number;
+    description: string;
+    recordDate: string;
+    createdAt: string;
+  };
+
+  type MoodStat = {
+    date: string;
+    moodScore: number;
+  };
+
+  // 扩展类型：用于每日模式（包含时间戳）
+  interface MoodPoint extends MoodStat {
+    time: number;        // 时间戳（毫秒）
+    label: string;       // 本地格式化时间
+  }
+
 }

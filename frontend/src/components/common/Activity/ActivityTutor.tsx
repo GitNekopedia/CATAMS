@@ -9,23 +9,28 @@ import {
   message,
   Modal,
   Select,
-  Table,
+  Table, Tag,
 } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { useModel, useIntl } from "@umijs/max";
 import {
-  getTutorCourses,
   getTutorAllocations,
 } from "@/services/task";
 import {
   getTutorsOfCourse,
-  submitWorkEntry,
 } from "@/services/dashboard";
 import type { ColumnsType } from "antd/es/table";
 
 const { Option } = Select;
 
-const ActivityTutor: React.FC = () => {
+type Props = {
+  entries: API.WorkEntry[];
+  tutorCourses: API.TutorCourse[];
+  onCreate: (payload: API.WorkEntrySubmitRequest) => Promise<void> | void;
+};
+
+const ActivityTutor: React.FC<Props> = ({ entries, tutorCourses, onCreate }) => {
+
   const [form] = Form.useForm();
   const intl = useIntl();
 
@@ -35,36 +40,24 @@ const ActivityTutor: React.FC = () => {
   const userId = currentUser?.id;
 
   // === 数据状态 ===
-  const [courses, setCourses] = useState<API.TutorCourse[]>([]);
   const [allocations, setAllocations] = useState<API.AllocationResponse[]>([]);
   const [unitTutors, setUnitTutors] = useState<API.TutorOfCourseDTO[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // === 初始化：获取 tutor 的课程 ===
-  useEffect(() => {
-    getTutorCourses().then((res) => {
-      if (res.success) {
-        setCourses(res.data || []);
-      } else {
-        message.error(intl.formatMessage({ id: "activity.tutor.loadCourseFail" }));
-      }
-    });
-  }, []);
 
   /**
    * 🔄 刷新课程相关数据
    */
   const refreshData = async (unitId: number, isSub: boolean) => {
     const res = await getTutorAllocations(unitId);
-    if (res.success) {
-      if (!isSub) setAllocations(res.data || []);
+
+      if (!isSub) setAllocations(res || []);
       else setAllocations([]);
-    }
 
     const tutorsRes = await getTutorsOfCourse(unitId);
-    if (tutorsRes.success) {
-      let tutors = tutorsRes.data || [];
+    if (tutorsRes) {
+      let tutors = tutorsRes || [];
       if (isSub && userId) {
         tutors = tutors.filter((t) => t.id !== userId);
       }
@@ -87,10 +80,10 @@ const ActivityTutor: React.FC = () => {
   const handleSubstituteTutorChange = async (tutorId: number) => {
     const unitId = form.getFieldValue("unitId");
     if (!unitId) return;
-    const res = await getTutorAllocations(unitId);
-    if (res.success) {
-      setAllocations((res.data || []).filter((a) => a.tutorId === tutorId));
-    }
+    const res = await getTutorAllocations(unitId, tutorId);
+
+    setAllocations((res || []).filter((a) => a.tutorId === tutorId));
+
   };
 
   /**
@@ -112,18 +105,15 @@ const ActivityTutor: React.FC = () => {
         weekStart: allocation.weekStart,
         hours: values.actualHours,
         description: values.description,
-        substituteTutorId: values.isSubstitute ? values.substituteTutorId : undefined,
+        substitute: values.isSubstitute,
       };
 
       setLoading(true);
-      const res = await submitWorkEntry(payload);
-      if (res.success) {
-        message.success(intl.formatMessage({ id: "activity.tutor.submitSuccess" }));
-        setModalOpen(false);
-        form.resetFields();
-      } else {
-        message.error(res.message || intl.formatMessage({ id: "activity.tutor.submitFail" }));
-      }
+      // message.success(intl.formatMessage({ id: "activity.tutor.submitSuccess" }));
+      // ⭐ 通知父组件刷新 entries
+      await onCreate(payload);
+      setModalOpen(false);
+      form.resetFields();
     } catch (err) {
       console.error(err);
     } finally {
@@ -131,15 +121,61 @@ const ActivityTutor: React.FC = () => {
     }
   };
 
-  // === 表格：工时记录 ===
-  const columns: ColumnsType<any> = [
-    { title: intl.formatMessage({ id: "activity.tutor.course" }), dataIndex: "unitName" },
-    { title: intl.formatMessage({ id: "activity.tutor.allocation" }), dataIndex: "taskName" },
-    { title: intl.formatMessage({ id: "activity.workType" }), dataIndex: "typeName" },
-    { title: intl.formatMessage({ id: "activity.tutor.weekStart" }, { defaultMessage: "周起始" }), dataIndex: "weekStart" },
-    { title: intl.formatMessage({ id: "activity.tutor.plannedHours" }, { defaultMessage: "计划工时" }), dataIndex: "plannedHours" },
-    { title: intl.formatMessage({ id: "activity.tutor.actualHours" }), dataIndex: "hours" },
+
+  const columns: ColumnsType<API.WorkEntry> = [
+    {
+      title: intl.formatMessage({ id: "activity.tutor.course" }),
+      dataIndex: "unitName",
+    },
+    {
+      title: intl.formatMessage({ id: "activity.workType" }),
+      dataIndex: "workType",
+    },
+    {
+      title: intl.formatMessage({ id: "activity.tutor.weekStart" }),
+      dataIndex: "weekStart",
+    },
+    {
+      title: intl.formatMessage({ id: "activity.tutor.actualHours" }),
+      dataIndex: "hours",
+    },
+    {
+      title: intl.formatMessage({ id: "activity.tutor.status" }),
+      dataIndex: "status",
+      render: (status: 'DRAFT' | 'SUBMITTED' | 'APPROVED_BY_LECTURER' | 'FINAL_APPROVED' | 'REJECTED') => {
+        const statusMap: Record<
+          'DRAFT' | 'SUBMITTED' | 'APPROVED_BY_LECTURER' | 'FINAL_APPROVED' | 'REJECTED',
+          { text: string; color: string }
+        > = {
+          DRAFT: {
+            text: intl.formatMessage({ id: "status.draft" }),
+            color: "default",
+          },
+          SUBMITTED: {
+            text: intl.formatMessage({ id: "status.submitted" }),
+            color: "blue",
+          },
+          APPROVED_BY_LECTURER: {
+            text: intl.formatMessage({ id: "status.approvedByLecturer" }),
+            color: "gold",
+          },
+          FINAL_APPROVED: {
+            text: intl.formatMessage({ id: "status.finalApproved" }),
+            color: "green",
+          },
+          REJECTED: {
+            text: intl.formatMessage({ id: "status.rejected" }),
+            color: "red",
+          },
+        };
+
+        const item = statusMap[status] || { text: status, color: "default" };
+        return <Tag color={item.color}>{item.text}</Tag>;
+      },
+    },
   ];
+
+
 
   return (
     <Card
@@ -157,7 +193,12 @@ const ActivityTutor: React.FC = () => {
         </Button>
       }
     >
-      <Table columns={columns} dataSource={[]} rowKey="id" />
+      <Table
+        columns={columns}
+        dataSource={entries}      // ✅ 从 props 接收的 entries
+        rowKey="id"
+        pagination={false}
+      />
 
       <Modal
         title={intl.formatMessage({ id: "activity.tutor.modalTitle" })}
@@ -178,7 +219,7 @@ const ActivityTutor: React.FC = () => {
               placeholder={intl.formatMessage({ id: "activity.tutor.selectCourse" })}
               onChange={handleUnitChange}
             >
-              {courses.map((c) => (
+              {(tutorCourses || []).map((c) => (
                 <Option key={c.unitId} value={c.unitId}>
                   {c.code} - {c.name}
                 </Option>

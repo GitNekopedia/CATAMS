@@ -29,10 +29,10 @@ spring:
     type: redis
 
   jackson:
-    date-format: yyyy-MM-dd HH:mm:ss
-    time-zone: Asia/Shanghai
+    time-zone: UTC
     serialization:
       write-dates-as-timestamps: false
+
 
 server:
   port: 9000

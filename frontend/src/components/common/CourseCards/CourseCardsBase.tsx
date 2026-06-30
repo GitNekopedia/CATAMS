@@ -41,7 +41,7 @@ function CourseCardsBase<T extends { id: number }>({
           >
             <Meta
               avatar={
-                <Avatar src="https://gw.alipayobjects.com/zos/rmsportal/WdGqmHpayyMjiEhcKoVE.png" />
+                <Avatar src="https://em-content.zobj.net/source/microsoft-teams/337/books_1f4da.png" />
               }
               title={<a href={`/course/${course.id}`}>{/* 动态标题 */}</a>}
               description={renderMeta(course)}

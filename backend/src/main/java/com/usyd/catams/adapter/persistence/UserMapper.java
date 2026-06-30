@@ -45,4 +45,8 @@ public interface UserMapper extends BaseMapper<UserEntity> {
     @Delete("DELETE FROM user WHERE id=#{id}")
     void delete(Long id);
 
+    @Select("SELECT COUNT(*) FROM user WHERE role = #{role}")
+    long countByRole(@Param("role") String role);
+
+
 }

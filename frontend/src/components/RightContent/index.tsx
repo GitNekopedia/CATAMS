@@ -3,12 +3,16 @@ import { SelectLang as UmiSelectLang } from '@umijs/max';
 
 export type SiderTheme = 'light' | 'dark';
 
+/**
+ * 自定义语言选择器：仅保留中英文
+ */
 export const SelectLang: React.FC = () => {
   return (
     <UmiSelectLang
-      style={{
-        padding: 4,
-      }}
+      style={{ padding: 4 }}
+      postLocalesData={(locales) =>
+        locales.filter((item) => ['zh-CN', 'en-US'].includes(item.lang))
+      }
     />
   );
 };

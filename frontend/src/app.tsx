@@ -20,9 +20,6 @@ declare const API_BASE_URL: string;
 const isDev = process.env.NODE_ENV === 'development';
 const loginPath = '/user/login';
 
-/**
- * @see https://umijs.org/docs/api/runtime-config#getinitialstate
- * */
 export async function getInitialState(): Promise<{
   settings?: Partial<LayoutSettings>;
   currentUser?: API.CurrentUser;
@@ -31,22 +28,46 @@ export async function getInitialState(): Promise<{
 }> {
   const fetchUserInfo = async () => {
     try {
-      const msg = await queryCurrentUser({
-        skipErrorHandler: true,
-      });
-      return msg.data;
+      // ✅ 方案A：不要 skipErrorHandler，让全局 errorHandler 接管 USR-001 的跳转逻辑
+      const msg = await queryCurrentUser();
+
+      // ✅ 后端返回结构 { code, message, data } 或已经被 transformResponse 处理成纯 data
+      // 兼容两种情况：
+      return (msg as any)?.data || (msg as any);
     } catch (_error) {
-      history.push(loginPath);
+      // 只做清理，不做跳转（跳转交给 requestErrorConfig 的 errorHandler）
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      return undefined;
     }
-    return undefined;
   };
-  // 如果不是登录页面，执行
+
   const { location } = history;
-  if (
-    ![loginPath, '/user/register', '/user/register-result'].includes(
-      location.pathname,
-    )
-  ) {
+
+  // ✅ 1️⃣ 优先从 localStorage 读取登录信息
+  const token = localStorage.getItem('token');
+  const userStr = localStorage.getItem('user');
+  let cachedUser: API.CurrentUser | null = null;
+  if (token && userStr) {
+    try {
+      cachedUser = JSON.parse(userStr);
+    } catch {
+      localStorage.removeItem('user');
+    }
+  }
+
+  // ✅ 2️⃣ 若当前不是登录页
+  if (![loginPath, '/user/register', '/user/register-result'].includes(location.pathname)) {
+    // 如果本地有用户缓存，就先返回（避免闪屏）
+    if (cachedUser) {
+      return {
+        fetchUserInfo,
+        currentUser: cachedUser,
+        settings: defaultSettings as Partial<LayoutSettings>,
+      };
+    }
+
+    // 否则向后端请求当前用户信息
     const currentUser = await fetchUserInfo();
     return {
       fetchUserInfo,
@@ -54,17 +75,17 @@ export async function getInitialState(): Promise<{
       settings: defaultSettings as Partial<LayoutSettings>,
     };
   }
+
+  // ✅ 登录页返回空用户
   return {
     fetchUserInfo,
+    currentUser: cachedUser || undefined,
     settings: defaultSettings as Partial<LayoutSettings>,
   };
 }
 
 // ProLayout 支持的api https://procomponents.ant.design/components/layout
-export const layout: RunTimeLayoutConfig = ({
-  initialState,
-  setInitialState,
-}) => {
+export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) => {
   return {
     actionsRender: () => [
       <Question key="doc" />,
@@ -83,11 +104,22 @@ export const layout: RunTimeLayoutConfig = ({
     footerRender: () => <Footer />,
     onPageChange: () => {
       const { location } = history;
-      // 如果没有登录，重定向到 login
-      if (!initialState?.currentUser && location.pathname !== loginPath) {
+      const loginPath = '/user/login';
+      const moodLoginPath = '/mood/login';
+
+      const currentPath = location.pathname;
+      const whiteList = [loginPath, moodLoginPath];
+
+      // ✅ 如果未登录，且不在白名单中，并且不是 mood 模块页面（你原逻辑保留）
+      if (
+        !initialState?.currentUser &&
+        !whiteList.includes(currentPath) &&
+        !currentPath.startsWith('/mood')
+      ) {
         history.push(loginPath);
       }
     },
+
     bgLayoutImgList: [
       {
         src: 'https://mdn.alipayobjects.com/yuyan_qk0oxh/afts/img/D2LWSqNny4sAAAAAAAAAAAAAFl94AQBr',
@@ -110,18 +142,14 @@ export const layout: RunTimeLayoutConfig = ({
     ],
     links: isDev
       ? [
-          <Link key="openapi" to="/umi/plugin/openapi" target="_blank">
-            <LinkOutlined />
-            <span>OpenAPI 文档</span>
-          </Link>,
-        ]
+        <Link key="openapi" to="/umi/plugin/openapi" target="_blank">
+          <LinkOutlined />
+          <span>OpenAPI 文档</span>
+        </Link>,
+      ]
       : [],
     menuHeaderRender: undefined,
-    // 自定义 403 页面
-    // unAccessible: <div>unAccessible</div>,
-    // 增加一个 loading 的状态
     childrenRender: (children) => {
-      // if (initialState?.loading) return <PageLoading />;
       return (
         <>
           {children}
@@ -146,9 +174,7 @@ export const layout: RunTimeLayoutConfig = ({
 };
 
 /**
- * @name request 配置，可以配置错误处理
- * 它基于 axios 和 ahooks 的 useRequest 提供了一套统一的网络请求和错误处理方案。
- * @doc https://umijs.org/docs/max/request#配置
+ * request 配置
  */
 export const request: RequestConfig = {
   baseURL: API_BASE_URL,

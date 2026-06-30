@@ -1,46 +1,54 @@
 package com.usyd.catams.adapter.web;
 
-import com.usyd.catams.adapter.web.dto.ApiResponse;
 import com.usyd.catams.adapter.web.dto.WorkEntrySubmitRequest;
 import com.usyd.catams.application.command.SubmitWorkEntryHandler;
 import com.usyd.catams.application.query.WorkEntryQueryService;
-import com.usyd.catams.application.service.AuthTokenService;
+import com.usyd.catams.infrastructure.exception.ApiResponse;
+import com.usyd.catams.infrastructure.exception.UnauthorizedException;
+import com.usyd.catams.infrastructure.security.AuthUserContext;
 import com.usyd.catams.domain.model.WorkEntry;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * 工时记录控制器
+ * Tutor 可提交工时、查询自己工时记录
+ */
 @RestController
 @RequestMapping("/api/work-entry")
+@RequiredArgsConstructor
 
 public class EntryController {
+
     private final SubmitWorkEntryHandler submitHandler;
     private final WorkEntryQueryService queryService;
-    private final AuthTokenService tokenService;
 
-    public EntryController(SubmitWorkEntryHandler submitHandler, WorkEntryQueryService queryService, AuthTokenService tokenService){
-        this.submitHandler = submitHandler;
-        this.queryService = queryService;
-        this.tokenService = tokenService;
-    }
 
+    /**
+     * Tutor 提交工时记录
+     */
     @PostMapping("/submit")
-    public ApiResponse<Long> submit(HttpServletRequest request, @RequestBody @Valid WorkEntrySubmitRequest req){
-        var user = tokenService.extractUserFromRequest(request);
-        if (user == null) {
-            return ApiResponse.fail("Unauthorized");
-        }
-        return ApiResponse.ok(submitHandler.handle(user.getId(), req));
+    public ApiResponse<Long> submit(@RequestBody @Valid WorkEntrySubmitRequest req) {
+        // ✅ 从统一上下文中获取当前登录用户
+        var user = AuthUserContext.get();
+
+        Long entryId = submitHandler.handle(user.getId(), req);
+        return ApiResponse.ok(entryId);
     }
 
+    /**
+     * 查询某 Tutor 某周的工时记录
+     */
     @GetMapping
     public ApiResponse<List<WorkEntry>> list(
             @RequestParam Long tutorId,
-            @RequestParam LocalDate weekStart){
-        return ApiResponse.ok(queryService.listByTutorWeek(tutorId, weekStart));
-    }
+            @RequestParam LocalDate weekStart) {
 
+        var entries = queryService.listByTutorWeek(tutorId, weekStart);
+        return ApiResponse.ok(entries);
+    }
 }

@@ -19,23 +19,25 @@ const DetailedHRWorkEntries: React.FC = () => {
   const [currentRecord, setCurrentRecord] = useState<API.DetailedLecturerPendingWorkEntry | null>(null);
   const [form] = Form.useForm();
 
-  /** 初始化加载数据 */
+  /** ✅ 初始化加载 */
   useEffect(() => {
     fetchData();
   }, []);
 
+  /** ✅ 获取所有待审批记录 */
   const fetchData = async () => {
     setLoading(true);
-    const res = await getAllHREntries();
-    if (res.success) {
-      setEntries(res.data || []);
-    } else {
-      message.error(res.message || intl.formatMessage({ id: 'approvals.message.loadFail' }));
+    try {
+      const data = await getAllHREntries(); // 返回纯业务数组
+      setEntries(data || []);
+    } catch {
+      message.error(intl.formatMessage({ id: 'approvals.message.loadFail' }));
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  /** 打开审批弹窗 */
+  /** ✅ 打开审批弹窗 */
   const openApprovalModal = (
     record: API.DetailedLecturerPendingWorkEntry,
     action: 'APPROVE' | 'REJECT'
@@ -46,36 +48,33 @@ const DetailedHRWorkEntries: React.FC = () => {
     form.resetFields();
   };
 
-  /** 提交审批操作 */
+  /** ✅ 提交审批操作 */
   const handleSubmitApproval = async () => {
     try {
       const values = await form.validateFields();
       if (!currentRecord || !currentAction) return;
 
-      const res = await submitApprovalAction({
+      await submitApprovalAction({
         entryId: currentRecord.workEntryId,
-        step: 'HR', // ✅ HR 审批阶段
-        action: currentAction!,
+        step: 'HR',
+        action: currentAction,
         comment: values.comment,
       });
 
-      if (res.success) {
-        message.success(
-          currentAction === 'APPROVE'
-            ? intl.formatMessage({ id: 'approvals.message.success.approve' })
-            : intl.formatMessage({ id: 'approvals.message.success.reject' })
-        );
-        setModalVisible(false);
-        fetchData();
-      } else {
-        message.error(res.message || intl.formatMessage({ id: 'approvals.message.error' }));
-      }
+      message.success(
+        currentAction === 'APPROVE'
+          ? intl.formatMessage({ id: 'approvals.message.success.approve' })
+          : intl.formatMessage({ id: 'approvals.message.success.reject' })
+      );
+
+      setModalVisible(false);
+      fetchData();
     } catch {
-      // 表单校验失败
+      message.error(intl.formatMessage({ id: 'approvals.message.error' }));
     }
   };
 
-  /** 搜索过滤 */
+  /** ✅ 搜索过滤 */
   const filteredEntries = entries.filter(
     (e) =>
       e.tutorName?.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -83,7 +82,7 @@ const DetailedHRWorkEntries: React.FC = () => {
       e.description?.toLowerCase().includes(searchText.toLowerCase())
   );
 
-  /** 表格列 */
+  /** ✅ 表格列定义 */
   const columns: ColumnsType<API.DetailedLecturerPendingWorkEntry> = [
     { title: intl.formatMessage({ id: 'approvals.col.tutor' }), dataIndex: 'tutorName', key: 'tutorName' },
     { title: intl.formatMessage({ id: 'approvals.col.unit' }), dataIndex: 'unitName', key: 'unitName' },
@@ -112,14 +111,21 @@ const DetailedHRWorkEntries: React.FC = () => {
       title: intl.formatMessage({ id: 'approvals.col.action' }),
       key: 'actions',
       render: (_, record) => {
-        // ✅ HR 只处理 APPROVED_BY_LECTURER 状态的工时
         if (record.status === 'APPROVED_BY_LECTURER') {
           return (
             <Space>
-              <Button type="primary" size="small" onClick={() => openApprovalModal(record, 'APPROVE')}>
+              <Button
+                type="primary"
+                size="small"
+                onClick={() => openApprovalModal(record, 'APPROVE')}
+              >
                 {intl.formatMessage({ id: 'approvals.action.approve' })}
               </Button>
-              <Button danger size="small" onClick={() => openApprovalModal(record, 'REJECT')}>
+              <Button
+                danger
+                size="small"
+                onClick={() => openApprovalModal(record, 'REJECT')}
+              >
                 {intl.formatMessage({ id: 'approvals.action.reject' })}
               </Button>
             </Space>

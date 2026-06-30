@@ -1,62 +1,75 @@
 package com.usyd.catams.adapter.web;
 
-import com.usyd.catams.adapter.web.dto.ApiResponse;
 import com.usyd.catams.adapter.web.dto.TaskDTO;
 import com.usyd.catams.adapter.web.dto.TaskRequest;
 import com.usyd.catams.application.service.TaskService;
+import com.usyd.catams.infrastructure.exception.ApiResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 任务管理接口（已由 AuthInterceptor 拦截 Token）
+ */
 @RestController
 @RequestMapping("/api/tasks")
+@RequiredArgsConstructor
 public class TaskController {
 
     private final TaskService service;
 
-    public TaskController(TaskService service) {
-        this.service = service;
-    }
-
-    // Create
+    /**
+     * 创建任务
+     */
     @PostMapping
     public ApiResponse<TaskDTO> create(@RequestBody TaskRequest req) {
-        TaskDTO task = service.createTask(req.getUnitId(), req.getTypeId(), req.getName());
+        var task = service.createTask(req.getUnitId(), req.getTypeId(), req.getName());
         return ApiResponse.ok(task);
     }
 
-    // Read (by ID)
+    /**
+     * 根据 ID 查询任务
+     */
     @GetMapping("/{id}")
     public ApiResponse<TaskDTO> get(@PathVariable Long id) {
-        TaskDTO task = service.getTask(id);
-        return task != null ? ApiResponse.ok(task) : ApiResponse.fail("Not found");
+        var task = service.getTask(id);
+        if (task == null) {
+            throw new IllegalArgumentException("Task not found with id: " + id);
+        }
+        return ApiResponse.ok(task);
     }
 
-    // Read (by Unit)
+    /**
+     * 根据课程查询任务列表
+     */
     @GetMapping("/unit/{unitId}")
     public ApiResponse<List<TaskDTO>> getByUnit(@PathVariable Long unitId) {
-        return ApiResponse.ok(service.getTasksByUnit(unitId));
+        var tasks = service.getTasksByUnit(unitId);
+        return ApiResponse.ok(tasks);
     }
 
-    // Update
+    /**
+     * 更新任务
+     */
     @PutMapping("/{id}")
     public ApiResponse<TaskDTO> update(@PathVariable Long id, @RequestBody TaskRequest req) {
-        try {
-            TaskDTO task = service.updateTask(id, req.getTypeId(), req.getName());
-            return ApiResponse.ok(task);
-        } catch (IllegalArgumentException e) {
-            return ApiResponse.fail(e.getMessage());
-        }
+        var updated = service.updateTask(id, req.getTypeId(), req.getName());
+        return ApiResponse.ok(updated);
     }
 
-    // Toggle Active
+    /**
+     * 切换任务启用状态
+     */
     @PatchMapping("/{id}/active")
     public ApiResponse<String> toggleActive(@PathVariable Long id, @RequestParam boolean isActive) {
         service.toggleTaskActive(id, isActive);
         return ApiResponse.ok("Updated");
     }
 
-    // Delete
+    /**
+     * 删除任务
+     */
     @DeleteMapping("/{id}")
     public ApiResponse<String> delete(@PathVariable Long id) {
         service.deleteTask(id);

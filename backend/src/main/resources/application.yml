@@ -40,13 +40,13 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
+    out-of-order: true
 
   cache:
     type: redis
 
   jackson:
-    date-format: yyyy-MM-dd HH:mm:ss
-    time-zone: Asia/Shanghai
+    time-zone: UTC                          # ✅ 改为 UTC
     serialization:
       write-dates-as-timestamps: false
 

@@ -1,55 +1,41 @@
 package com.usyd.catams.adapter.web;
 
-import com.usyd.catams.adapter.web.dto.ApiResponse;
 import com.usyd.catams.adapter.web.dto.AllocationRequest;
 import com.usyd.catams.adapter.web.dto.AllocationResponse;
-import com.usyd.catams.adapter.web.dto.LoginResponse;
-import com.usyd.catams.application.service.AuthTokenService;
 import com.usyd.catams.application.service.PlannedTaskAllocationService;
-import jakarta.servlet.http.HttpServletRequest;
+import com.usyd.catams.infrastructure.exception.ApiResponse;
+import com.usyd.catams.infrastructure.security.AuthUserContext;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Lecturer 管理任务分配（Allocations）接口
+ * 已经由 AuthInterceptor 拦截校验 Token。
+ */
 @RestController
 @RequestMapping("/api/allocations")
+@RequiredArgsConstructor
 public class TaskAllocationController {
-    private final AuthTokenService tokenService;
-    private final PlannedTaskAllocationService allocationService;
 
-    public TaskAllocationController(AuthTokenService tokenService,
-                                    PlannedTaskAllocationService allocationService) {
-        this.tokenService = tokenService;
-        this.allocationService = allocationService;
-    }
+    private final PlannedTaskAllocationService allocationService;
 
     /**
      * 查询某个 unit 下的所有任务分配
      */
     @GetMapping
-    public ApiResponse<List<AllocationResponse>> listAllocations(HttpServletRequest request,
-                                                                 @RequestParam Long unitId) {
-
-        LoginResponse.UserDTO user = tokenService.extractUserFromRequest(request);
-
-        if (user == null) return ApiResponse.fail("Unauthorized");
-
-
-        return ApiResponse.ok(allocationService.listAllocationsByUnit(unitId));
+    public ApiResponse<List<AllocationResponse>> listAllocations(@RequestParam Long unitId) {
+        var allocations = allocationService.listAllocationsByUnit(unitId);
+        return ApiResponse.ok(allocations);
     }
 
     /**
-     * 保存某个 tutor 的 allocations（批量提交）
+     * 批量保存 Tutor 的任务分配
      */
     @PostMapping
-    public ApiResponse<String> saveAllocations(HttpServletRequest request,
-                                               @RequestBody AllocationRequest req) {
-
-        LoginResponse.UserDTO user = tokenService.extractUserFromRequest(request);
-
-        if (user == null) return ApiResponse.fail("Unauthorized");
-
-
+    public ApiResponse<String> saveAllocations(@RequestBody AllocationRequest req) {
+        var user = AuthUserContext.get(); // ✅ 当前登录 Lecturer
         allocationService.saveTutorAllocations(
                 req.getUnitId(),
                 req.getTutorId(),
@@ -60,36 +46,23 @@ public class TaskAllocationController {
     }
 
     /**
-     * 更新单条分配的工时
+     * 更新单条任务分配的计划工时
      */
     @PutMapping("/{id}")
-    public ApiResponse<String> updateAllocation(HttpServletRequest request,
-                                                @PathVariable Long id,
+    public ApiResponse<String> updateAllocation(@PathVariable Long id,
                                                 @RequestParam double plannedHours) {
-
-        LoginResponse.UserDTO user = tokenService.extractUserFromRequest(request);
-
-        if (user == null) return ApiResponse.fail("Unauthorized");
-
-
+        var user = AuthUserContext.get();
         allocationService.updateAllocationHours(id, plannedHours, user.getId());
         return ApiResponse.ok("success");
     }
 
     /**
-     * 删除单条分配
+     * 删除单条任务分配
      */
-    @DeleteMapping()
-    public ApiResponse<String> deleteByTutorAndTask(HttpServletRequest request,
-                                                    @RequestParam Long tutorId,
+    @DeleteMapping
+    public ApiResponse<String> deleteByTutorAndTask(@RequestParam Long tutorId,
                                                     @RequestParam Long taskId) {
-
-        LoginResponse.UserDTO user = tokenService.extractUserFromRequest(request);
-
-        if (user == null) return ApiResponse.fail("Unauthorized");
-
-
         allocationService.deleteByTutorAndTask(tutorId, taskId);
-        return ApiResponse.ok("Success");
+        return ApiResponse.ok("success");
     }
 }

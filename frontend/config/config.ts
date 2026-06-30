@@ -151,13 +151,6 @@ export default defineConfig({
   headScripts: [
     // 解决首次加载时白屏的问题
     { src: join(PUBLIC_PATH, 'scripts/loading.js'), async: true },
-
-    // 👉 Umami Analytics 追踪脚本
-    {
-      src: 'http://localhost:3000/script.js',
-      defer: true,
-      'data-website-id': '55ea0fa2-2aed-4832-896a-8d61ee73cf40',
-    },
   ],
   //================ pro 插件配置 =================
   presets: ['umi-presets-pro'],
@@ -193,4 +186,13 @@ export default defineConfig({
   esbuildMinifyIIFE: true,
   requestRecord: {},
   exportStatic: false,
+  /**
+   * @name 代码分割配置
+   * @description 开启路由级别的代码分割，减少首屏 JS 体积
+   * @doc https://umijs.org/docs/api/config#codesplitting
+   * @note Umi v4 默认开启路由级代码分割，无需 dynamicImport 配置
+   */
+  codeSplitting: {
+    jsStrategy: 'granularChunks',
+  },
 });

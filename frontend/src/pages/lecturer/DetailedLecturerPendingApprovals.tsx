@@ -22,15 +22,18 @@ const DetailedLecturerPendingApprovals: React.FC = () => {
     fetchData();
   }, []);
 
+  /** ✅ 获取待审批工时记录 */
   const fetchData = async () => {
     setLoading(true);
-    const res = await getAllLecturerEntries();
-    if (res.success) {
-      setEntries(res.data || []);
-    } else {
-      message.error(res.message || intl.formatMessage({ id: 'approvals.message.loadFail' }));
+    try {
+      const data = await getAllLecturerEntries();
+      setEntries(data || []);
+    } catch (err) {
+      console.error(err);
+      message.error(intl.formatMessage({ id: 'approvals.message.loadFail' }));
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const openApprovalModal = (
@@ -43,40 +46,38 @@ const DetailedLecturerPendingApprovals: React.FC = () => {
     form.resetFields();
   };
 
+  /** ✅ 提交审批操作 */
   const handleSubmitApproval = async () => {
     try {
       const values = await form.validateFields();
       if (!currentRecord || !currentAction) return;
 
-      const res = await submitApprovalAction({
+      await submitApprovalAction({
         entryId: currentRecord.workEntryId,
         step: 'LECTURER',
         action: currentAction!,
         comment: values.comment,
       });
 
-      if (res.success) {
-        if (currentAction === 'APPROVE') {
-          message.success(
-            values.comment
-              ? intl.formatMessage({ id: 'approvals.message.success.approve' }, { comment: values.comment })
-              : intl.formatMessage({ id: 'approvals.message.success.approve.noComment' })
-          );
-        } else {
-          message.success(
-            intl.formatMessage({ id: 'approvals.message.success.reject' }, { comment: values.comment })
-          );
-        }
-        setModalVisible(false);
-        fetchData();
+      if (currentAction === 'APPROVE') {
+        message.success(
+          values.comment
+            ? intl.formatMessage({ id: 'approvals.message.success.approve' }, { comment: values.comment })
+            : intl.formatMessage({ id: 'approvals.message.success.approve.noComment' })
+        );
       } else {
-        message.error(res.message || intl.formatMessage({ id: 'approvals.message.error' }));
+        message.success(
+          intl.formatMessage({ id: 'approvals.message.success.reject' }, { comment: values.comment })
+        );
       }
-    } catch {
-      // 表单校验失败
+      setModalVisible(false);
+      fetchData();
+    } catch (err) {
+      message.error(intl.formatMessage({ id: 'approvals.message.error' }));
     }
   };
 
+  /** ✅ 搜索过滤 */
   const filteredEntries = entries.filter(
     (e) =>
       e.tutorName?.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -84,6 +85,7 @@ const DetailedLecturerPendingApprovals: React.FC = () => {
       e.description?.toLowerCase().includes(searchText.toLowerCase())
   );
 
+  /** ✅ 表格列定义 */
   const columns: ColumnsType<API.DetailedLecturerPendingWorkEntry> = [
     { title: intl.formatMessage({ id: 'approvals.col.tutor' }), dataIndex: 'tutorName', key: 'tutorName' },
     { title: intl.formatMessage({ id: 'approvals.col.unit' }), dataIndex: 'unitName', key: 'unitName' },
@@ -141,7 +143,7 @@ const DetailedLecturerPendingApprovals: React.FC = () => {
         />
       </Space>
       <Table
-        rowKey="approvalTaskId"
+        rowKey="workEntryId"
         columns={columns}
         dataSource={filteredEntries}
         loading={loading}

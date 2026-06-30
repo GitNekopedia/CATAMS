@@ -1,23 +1,24 @@
 package com.usyd.catams.adapter.web;
 
-import com.usyd.catams.adapter.web.dto.ApiResponse;
 import com.usyd.catams.adapter.web.dto.UnitAssignmentDTO;
 import com.usyd.catams.application.service.UnitAssignmentService;
 import com.usyd.catams.domain.model.UnitAssignment;
+import com.usyd.catams.infrastructure.exception.ApiResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 课程分配管理接口（已由 AuthInterceptor 校验 Token）
+ */
 @RestController
 @RequestMapping("/api/assignment")
+@RequiredArgsConstructor
 public class UnitAssignmentController {
 
     private final UnitAssignmentService service;
-
-    public UnitAssignmentController(UnitAssignmentService service) {
-        this.service = service;
-    }
 
     /** 查询课程分配列表（可筛选） */
     @GetMapping("/list")
@@ -34,7 +35,7 @@ public class UnitAssignmentController {
     /** 创建课程分配 */
     @PostMapping("/create")
     public ApiResponse<Map<String, Object>> createAssignment(@RequestBody UnitAssignment req) {
-        Long id = service.create(req);
+        var id = service.create(req);
         return ApiResponse.ok(Map.of("id", id));
     }
 

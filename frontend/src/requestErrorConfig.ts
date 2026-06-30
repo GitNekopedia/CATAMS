@@ -1,91 +1,74 @@
-﻿import type { RequestOptions } from '@@/plugin-request/request';
-import type { RequestConfig } from '@umijs/max';
-import { message, notification } from 'antd';
+﻿import type { RequestConfig, RequestOptions } from '@umijs/max';
+import { message } from 'antd';
 
-// 错误处理方案： 错误类型
-enum ErrorShowType {
-  SILENT = 0,
-  WARN_MESSAGE = 1,
-  ERROR_MESSAGE = 2,
-  NOTIFICATION = 3,
-  REDIRECT = 9,
-}
-// 与后端约定的响应数据格式
-interface ResponseStructure {
-  success: boolean;
-  data: any;
-  errorCode?: number;
-  errorMessage?: string;
-  showType?: ErrorShowType;
+interface ApiResponse<T = any> {
+  code: string;
+  message: string;
+  data: T;
+  error?: string;
+  timestamp?: string;
 }
 
-/**
- * @name 错误处理
- * pro 自带的错误处理， 可以在这里做自己的改动
- * @doc https://umijs.org/docs/max/request#配置
- */
+// ====== Auth redirect guard ======
+const AUTH_REDIRECTING_KEY = '__AUTH_REDIRECTING__';
+
+function isLoginPage(pathname: string) {
+  return pathname === '/mood/login' || pathname === '/user/login';
+}
+
+function redirectToLogin() {
+  const pathname = window.location.pathname;
+
+  // 登录页不跳
+  if (isLoginPage(pathname)) return;
+
+  // 跳转锁：避免并发请求/重复进入
+  if (sessionStorage.getItem(AUTH_REDIRECTING_KEY) === '1') return;
+  sessionStorage.setItem(AUTH_REDIRECTING_KEY, '1');
+
+  message.warning('登录已过期或未登录，请重新登录');
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+
+  // mood 模块走 /mood/login，其它走 /user/login?redirect=
+  if (pathname.startsWith('/mood')) {
+    window.location.replace('/mood/login');
+  } else {
+    const redirect = encodeURIComponent(pathname);
+    window.location.replace(`/user/login?redirect=${redirect}`);
+  }
+}
+
 export const errorConfig: RequestConfig = {
-  // 错误处理： umi@3 的错误处理方案。
   errorConfig: {
-    // 错误抛出
-    errorThrower: (res) => {
-      const { success, data, errorCode, errorMessage, showType } =
-        res as unknown as ResponseStructure;
-      if (!success) {
-        const error: any = new Error(errorMessage);
-        error.name = 'BizError';
-        error.info = { errorCode, errorMessage, showType, data };
-        throw error; // 抛出自制的错误
-      }
-    },
-    // 错误接收及处理
+    // 交给 transformResponse
+    errorThrower: (res) => res,
+
     errorHandler: (error: any, opts: any) => {
       if (opts?.skipErrorHandler) throw error;
-      // 我们的 errorThrower 抛出的错误。
-      if (error.name === 'BizError') {
-        const errorInfo: ResponseStructure | undefined = error.info;
-        if (errorInfo) {
-          const { errorMessage, errorCode } = errorInfo;
-          switch (errorInfo.showType) {
-            case ErrorShowType.SILENT:
-              // do nothing
-              break;
-            case ErrorShowType.WARN_MESSAGE:
-              message.warning(errorMessage);
-              break;
-            case ErrorShowType.ERROR_MESSAGE:
-              message.error(errorMessage);
-              break;
-            case ErrorShowType.NOTIFICATION:
-              notification.open({
-                description: errorMessage,
-                message: errorCode,
-              });
-              break;
-            case ErrorShowType.REDIRECT:
-              // TODO: redirect
-              break;
-            default:
-              message.error(errorMessage);
-          }
+
+      // transformResponse 抛出的业务异常
+      if (error?.__IS_BUSINESS_ERROR__) {
+        // token 失效：统一在这里跳转（避免 transformResponse 跳转造成循环）
+        if (error?.code === 'USR-001' || error?.message === 'UNAUTHORIZED') {
+          redirectToLogin();
+          return;
         }
-      } else if (error.response) {
-        // Axios 的错误
-        // 请求成功发出且服务器也响应了状态码，但状态代码超出了 2xx 的范围
-        message.error(`Response status:${error.response.status}`);
-      } else if (error.request) {
-        // 请求已经成功发起，但没有收到响应
-        // \`error.request\` 在浏览器中是 XMLHttpRequest 的实例，
-        // 而在node.js中是 http.ClientRequest 的实例
-        message.error('None response! Please retry.');
+        // 其他业务异常一般已在 transformResponse toast
+        return;
+      }
+
+      // HTTP / 网络 / 其它错误
+      if (error?.response) {
+        message.error(`HTTP错误：${error.response.status}`);
+      } else if (error?.request) {
+        message.error('请求超时或无响应，请重试');
       } else {
-        // 发送请求时出了点问题
-        message.error('Request error, please retry.');
+        message.error(error?.message || '请求配置错误');
       }
     },
   },
 
-  // 请求拦截器
   requestInterceptors: [
     (config: RequestOptions) => {
       const token = localStorage.getItem('token');
@@ -99,16 +82,67 @@ export const errorConfig: RequestConfig = {
     },
   ],
 
-  // 响应拦截器
-  responseInterceptors: [
-    (response) => {
-      // 拦截响应数据，进行个性化处理
-      const { data } = response as unknown as ResponseStructure;
-
-      if (data?.success === false) {
-        message.error('请求失败！');
+  transformResponse: [
+    (response: any) => {
+      // 非 JSON 字符串直接返回（下载/纯文本等）
+      if (typeof response !== 'string' || !response.trim().startsWith('{')) {
+        return response;
       }
-      return response;
+
+      let data: ApiResponse;
+      try {
+        data = JSON.parse(response);
+      } catch {
+        return response;
+      }
+
+      // ✅ token 失效：这里只 throw，不做跳转
+      if (data.code === 'USR-001') {
+        const err: any = new Error('UNAUTHORIZED');
+        err.code = data.code;
+        err.__IS_BUSINESS_ERROR__ = true;
+        message.error(data.error);
+        throw err;
+      }
+
+      // ✅ 工时重复提交
+      if (data.code === 'WKE-002') {
+        const backendError = data.error || data.message || '该任务在该周已提交过工时';
+        message.error(backendError);
+
+        const err: any = new Error('WORK_ENTRY_DUPLICATE');
+        err.code = data.code;
+        err.msg = backendError;
+        err.__IS_BUSINESS_ERROR__ = true;
+        throw err;
+      }
+
+      // ✅ 其他系统错误
+      if (data.code === 'SYS-002') {
+        const backendError = data.error || data.message || 'Internal Error, Please contact the admin';
+        message.error(backendError);
+
+        const err: any = new Error('INTERNAL_ERROR');
+        err.code = data.code;
+        err.msg = backendError;
+        err.__IS_BUSINESS_ERROR__ = true;
+        throw err;
+      }
+
+      // ✅ 其它非成功 code
+      if (data.code !== 'SYS-000') {
+        const backendError = data.message || '请求失败';
+        message.error(backendError);
+
+        const err: any = new Error('BUSINESS_ERROR');
+        err.code = data.code;
+        err.msg = backendError;
+        err.__IS_BUSINESS_ERROR__ = true;
+        throw err;
+      }
+
+      // ✅ 成功只返回 data
+      return data.data;
     },
   ],
 };

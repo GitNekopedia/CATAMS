@@ -21,13 +21,13 @@ const TutorAllocations: React.FC = () => {
 
   /** 获取课程列表 */
   useEffect(() => {
-    getTutorCourses().then((res) => {
-      if (res.success) {
-        setCourses(res.data || []);
-      } else {
-        message.error(res.message || intl.formatMessage({ id: "unitAlloc.message.loadUnitFail" }));
-      }
-    });
+    getTutorCourses()
+      .then((courses) => {
+        setCourses(courses || []);
+      })
+      .catch(() => {
+        message.error(intl.formatMessage({ id: "unitAlloc.message.loadUnitFail" }));
+      });
   }, []);
 
   /** 根据选中课程加载 allocations */
@@ -38,46 +38,50 @@ const TutorAllocations: React.FC = () => {
           ? courses.map((c) => getTutorAllocations(c.unitId))
           : [getTutorAllocations(selectedUnit)];
 
-      Promise.all(promises).then((responses) => {
-        const allData: API.AllocationResponse[] = [];
-        responses.forEach((r) => {
-          if (r.success) allData.push(...(r.data || []));
+      Promise.all(promises)
+        .then((responses) => {
+          // ✅ responses 现在是 AllocationResponse[][] 类型
+          const allData = responses.flat(); // 一次性拍平即可
+          setRawAllocations(allData);
+
+          /** 转换为每个unitId对应的Week1~Week12结构 */
+          const grouped: Record<number, any[]> = {};
+          if (allData.length > 0) {
+            const allDates = allData.map((a) => new Date(a.weekStart).getTime());
+            const min = Math.min(...allDates);
+
+            allData.forEach((a) => {
+              const diffWeeks = Math.floor(
+                (new Date(a.weekStart).getTime() - min) / (7 * 24 * 3600 * 1000)
+              );
+              const weekKey = `Week${diffWeeks + 1}`;
+              const unitId = a.unitId;
+
+              if (!grouped[unitId]) grouped[unitId] = [];
+              let row = grouped[unitId].find((r) => r.taskId === a.taskId);
+              if (!row) {
+                row = {
+                  id: a.taskId,
+                  taskId: a.taskId,
+                  taskName: a.taskName,
+                  typeName: a.typeName,
+                  payCategory: a.payCategory,
+                  payRate: a.payRate,
+                  weekHours: Object.fromEntries(weeks.map((w) => [w, 0])),
+                };
+                grouped[unitId].push(row);
+              }
+              row.weekHours[weekKey] = a.plannedHours;
+            });
+          }
+          setAllocations(grouped);
+        })
+        .catch(() => {
+          message.error(intl.formatMessage({ id: "unitAlloc.message.loadAllocFail" }));
         });
-
-        setRawAllocations(allData);
-
-        /** 转换为每个unitId对应的Week1~Week12结构 */
-        const grouped: Record<number, any[]> = {};
-        if (allData.length > 0) {
-          const allDates = allData.map((a) => new Date(a.weekStart).getTime());
-          const min = Math.min(...allDates);
-
-          allData.forEach((a) => {
-            const diffWeeks = Math.floor((new Date(a.weekStart).getTime() - min) / (7 * 24 * 3600 * 1000));
-            const weekKey = `Week${diffWeeks + 1}`;
-            const unitId = a.unitId;
-
-            if (!grouped[unitId]) grouped[unitId] = [];
-            let row = grouped[unitId].find((r) => r.taskId === a.taskId);
-            if (!row) {
-              row = {
-                id: a.taskId,
-                taskId: a.taskId,
-                taskName: a.taskName,
-                typeName: a.typeName,
-                payCategory: a.payCategory,   // 👈 新增：PHD / Non-PhD
-                payRate: a.payRate,       // 👈 新增：对应的时薪
-                weekHours: Object.fromEntries(weeks.map((w) => [w, 0])),
-              };
-              grouped[unitId].push(row);
-            }
-            row.weekHours[weekKey] = a.plannedHours;
-          });
-        }
-        setAllocations(grouped);
-      });
     }
   }, [activeTab, selectedUnit, courses]);
+
 
   /** 分周分组（日期 -> Week1..WeekN） */
   const byWeek = useMemo(() => {

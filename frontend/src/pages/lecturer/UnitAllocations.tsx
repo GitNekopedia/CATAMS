@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, {useEffect, useMemo, useState} from "react";
 import {
   Card,
   Select,
@@ -13,9 +13,9 @@ import {
   Modal,
   Form, InputNumber,
 } from "antd";
-import { PlusOutlined, DeleteOutlined, SaveOutlined } from "@ant-design/icons";
-import { useIntl } from "@umijs/max";
-import { getLecturerCourses, getTutorsOfCourse } from "@/services/dashboard";
+import {PlusOutlined, DeleteOutlined, SaveOutlined} from "@ant-design/icons";
+import {useIntl} from "@umijs/max";
+import {getLecturerCourses, getTutorsOfCourse} from "@/services/dashboard";
 import AllocationsTable from "@/components/common/AllocationsTable";
 import {
   getTaskTypes,
@@ -29,11 +29,11 @@ import {
   deleteAllocationsByTask,
 } from "@/services/task";
 
-const { Option } = Select;
-const { TabPane } = Tabs;
-const { Text } = Typography;
+const {Option} = Select;
+const {TabPane} = Tabs;
+const {Text} = Typography;
 
-const weeks = Array.from({ length: 12 }, (_, i) => `Week${i + 1}`);
+const weeks = Array.from({length: 12}, (_, i) => `Week${i + 1}`);
 
 const UnitAllocations: React.FC = () => {
   const intl = useIntl();
@@ -56,52 +56,80 @@ const UnitAllocations: React.FC = () => {
   const [taskForm] = Form.useForm();
 
   useEffect(() => {
-    getLecturerCourses().then((res) => {
-      if (res.success) {
-        setUnits(res.data || []);
-      } else {
-        message.error(res.message || intl.formatMessage({ id: "unitAlloc.message.loadUnitFail" }));
-      }
-    });
+    getLecturerCourses()
+      .then((courses) => {
+        setUnits(courses || []);
+      })
+      .catch(() => {
+        message.error(intl.formatMessage({id: 'unitAlloc.message.loadUnitFail'}));
+      });
   }, []);
+
 
   useEffect(() => {
     if (selectedUnit) {
-      getTutorsOfCourse(selectedUnit).then((res) => {
-        if (res.success) setTutors(res.data || []);
-        else message.error(res.message || intl.formatMessage({ id: "unitAlloc.message.loadTutorFail" }));
-      });
+      // 1️⃣ 获取 Tutors
+      getTutorsOfCourse(selectedUnit)
+        .then((tutors) => setTutors(tutors || []))
+        .catch(() =>
+          message.error(intl.formatMessage({id: 'unitAlloc.message.loadTutorFail'}))
+        );
 
-      getTaskTypes(selectedUnit).then((res) => setTaskTypes(res.success ? res.data || [] : []));
-      getTasks(selectedUnit).then((res) => setTasks(res.success ? res.data || [] : []));
-      getAllocations(selectedUnit).then((res) => {
-        if (res.success) {
+      // 2️⃣ 获取任务类型
+      getTaskTypes(selectedUnit)
+        .then((types) => setTaskTypes(types || []))
+        .catch(() => setTaskTypes([]));
+
+      // 3️⃣ 获取任务列表
+      getTasks(selectedUnit)
+        .then((tasks) => setTasks(tasks || []))
+        .catch(() => setTasks([]));
+
+      // 4️⃣ 获取分配信息
+      getAllocations(selectedUnit)
+        .then((allocations) => {
           const grouped: Record<number, API.AllocationRow[]> = {};
-          res.data.forEach((a) => {
-            const weekKey = toWeekKey(a.weekStart, res.data);
-            if (!grouped[a.tutorId]) grouped[a.tutorId] = [];
 
-            let row = grouped[a.tutorId].find((r) => r.taskId === a.taskId);
-            if (!row) {
-              row = {
-                key: `${a.tutorId}-${a.taskId}`,
-                tutorId: a.tutorId,
-                taskId: a.taskId,
-                taskName: a.taskName,
-                typeName: a.typeName,
-                weekHours: Object.fromEntries(weeks.map((w) => [w, 0])),
-                payCategory: a.payCategory,
-                payRate: a.payRate,
-              };
-              grouped[a.tutorId].push(row);
-            }
-            row.weekHours[weekKey] = a.plannedHours;
-          });
+          if (allocations && allocations.length > 0) {
+            const allDates = allocations.map((a) => new Date(a.weekStart).getTime());
+            const min = Math.min(...allDates);
+
+            allocations.forEach((a) => {
+              const diffWeeks = Math.floor(
+                (new Date(a.weekStart).getTime() - min) / (7 * 24 * 3600 * 1000)
+              );
+              const weekKey = `Week${diffWeeks + 1}`;
+              const tutorId = a.tutorId;
+
+              if (!grouped[tutorId]) grouped[tutorId] = [];
+
+              let row = grouped[tutorId].find((r) => r.taskId === a.taskId);
+              if (!row) {
+                row = {
+                  key: `${a.tutorId}-${a.taskId}`,
+                  tutorId: a.tutorId,
+                  taskId: a.taskId,
+                  taskName: a.taskName,
+                  typeName: a.typeName,
+                  weekHours: Object.fromEntries(weeks.map((w) => [w, 0])),
+                  payCategory: a.payCategory,
+                  payRate: a.payRate,
+                };
+                grouped[tutorId].push(row);
+              }
+
+              row.weekHours[weekKey] = a.plannedHours;
+            });
+          }
+
           setAllocations(grouped);
-        }
-      });
+        })
+        .catch(() =>
+          message.error(intl.formatMessage({id: 'unitAlloc.message.loadAllocFail'}))
+        );
     }
   }, [selectedUnit]);
+
 
   function toWeekKey(weekStart: string, all: API.AllocationResponse[]): string {
     const allDates = all.map((a) => new Date(a.weekStart).getTime());
@@ -123,21 +151,17 @@ const UnitAllocations: React.FC = () => {
       })),
     };
 
-    try {
-      const res = await saveTutorAllocations(payload);
-      if (res.success) {
-        message.success(intl.formatMessage({ id: "unitAlloc.message.saveSuccess" }));
-      } else {
-        message.error(res.message || intl.formatMessage({ id: "unitAlloc.message.saveFail" }));
-      }
-    } catch (e) {
-      message.error(intl.formatMessage({ id: "unitAlloc.message.requestFail" }));
-    }
+
+    const res = await saveTutorAllocations(payload);
+
+    message.success(intl.formatMessage({id: "unitAlloc.message.saveSuccess"}));
+
+
   };
 
   const onAddAllocation = async () => {
     const values = await allocForm.validateFields();
-    const { taskId, selectedPayRate } = values;
+    const {taskId, selectedPayRate} = values;
     const payRate = selectedPayRate.value;
     const payCategory = selectedPayRate.category;
     const task = tasks.find((t) => t.id === taskId);
@@ -168,7 +192,7 @@ const UnitAllocations: React.FC = () => {
       ...prev,
       [tutorId]: (prev[tutorId] || []).map((r) =>
         r.taskId === taskId
-          ? { ...r, weekHours: { ...r.weekHours, [week]: value } }
+          ? {...r, weekHours: {...r.weekHours, [week]: value}}
           : r
       ),
     }));
@@ -181,111 +205,112 @@ const UnitAllocations: React.FC = () => {
   );
 
   const typeColumns = [
-    { title: intl.formatMessage({ id: "unitAlloc.taskTypes" }), dataIndex: "name" },
+    {title: intl.formatMessage({id: "unitAlloc.taskTypes"}), dataIndex: "name"},
     {
-      title: intl.formatMessage({ id: "unitAlloc.phdPayRate" }),
+      title: intl.formatMessage({id: "unitAlloc.phdPayRate"}),
       dataIndex: "phdPayRate",
       render: (val: number) => (val ? `$${val.toFixed(2)}/hr` : "-"),
       width: 160,
     },
     {
-      title: intl.formatMessage({ id: "unitAlloc.nonPhdPayRate" }),
+      title: intl.formatMessage({id: "unitAlloc.nonPhdPayRate"}),
       dataIndex: "nonPhdPayRate",
       render: (val: number) => (val ? `$${val.toFixed(2)}/hr` : "-"),
       width: 180,
     },
     {
-      title: intl.formatMessage({ id: "approvals.col.action" }),
+      title: intl.formatMessage({id: "approvals.col.action"}),
       width: 100,
       render: (_: any, record: API.TaskTypeDTO) => (
         <Popconfirm
-          title={intl.formatMessage({ id: "unitAlloc.message.taskTypeUsed" })}
+          title={intl.formatMessage({id: "unitAlloc.message.taskTypeUsed"})}
           onConfirm={() => {
             const used = tasks.some((t) => t.typeId === record.id);
             if (used) {
-              message.warning(intl.formatMessage({ id: "unitAlloc.message.taskTypeUsed" }));
+              message.warning(intl.formatMessage({id: "unitAlloc.message.taskTypeUsed"}));
               return;
             }
             deleteTaskType(record.id).then((res) => {
-              if (res.success) {
-                message.success(intl.formatMessage({ id: "unitAlloc.message.deleted" }));
-                getTaskTypes(selectedUnit!).then((r) => setTaskTypes(r.data || []));
-              } else {
-                message.error(res.message || intl.formatMessage({ id: "unitAlloc.message.deleteFail" }));
-              }
+
+              message.success(intl.formatMessage({id: "unitAlloc.message.deleted"}));
+              getTaskTypes(selectedUnit!).then((r) => setTaskTypes(r || []));
+
             });
           }}
         >
-          <Button icon={<DeleteOutlined />} danger size="small" />
+          <Button icon={<DeleteOutlined/>} danger size="small"/>
         </Popconfirm>
       ),
     },
   ];
 
   const typeTableTitle = (
-    <div style={{ display: "flex", justifyContent: "space-between" }}>
-      <Text strong>{intl.formatMessage({ id: "unitAlloc.taskTypes" })}</Text>
+    <div style={{display: "flex", justifyContent: "space-between"}}>
+      <Text strong>{intl.formatMessage({id: "unitAlloc.taskTypes"})}</Text>
       <Button
         type="primary"
-        icon={<PlusOutlined />}
+        icon={<PlusOutlined/>}
         onClick={() => {
           typeForm.resetFields();
           setTypeModalOpen(true);
         }}
       >
-        {intl.formatMessage({ id: "unitAlloc.addType" })}
+        {intl.formatMessage({id: "unitAlloc.addType"})}
       </Button>
     </div>
   );
 
   const taskColumns = [
-    { title: intl.formatMessage({ id: "unitAlloc.unitTasks" }), dataIndex: "name" },
+    {title: intl.formatMessage({id: 'unitAlloc.unitTasks'}), dataIndex: 'name'},
     {
-      title: intl.formatMessage({ id: "unitAlloc.taskTypes" }),
-      dataIndex: "typeId",
-      render: (id: number) => typeMap[id] || "-",
+      title: intl.formatMessage({id: 'unitAlloc.taskTypes'}),
+      dataIndex: 'typeId',
+      render: (id: number) => typeMap[id] || '-',
       width: 220,
     },
     {
-      title: intl.formatMessage({ id: "approvals.col.action" }),
+      title: intl.formatMessage({id: 'approvals.col.action'}),
       width: 100,
       render: (_: any, record: API.TaskDTO) => (
         <Popconfirm
-          title={intl.formatMessage({ id: "unitAlloc.message.deleteFail" })}
-          onConfirm={() => {
-            deleteTask(record.id).then((res) => {
-              if (res.success) {
-                message.success(intl.formatMessage({ id: "unitAlloc.message.deleted" }));
-                getTasks(selectedUnit!).then((r) => setTasks(r.data || []));
-              } else {
-                message.error(res.message || intl.formatMessage({ id: "unitAlloc.message.deleteFail" }));
-              }
-            });
+          title={intl.formatMessage({id: 'unitAlloc.message.deleteConfirm'})} // ✅ 建议用确认语
+          onConfirm={async () => {
+            try {
+              await deleteTask(record.id);
+              message.success(intl.formatMessage({id: 'unitAlloc.message.deleted'}));
+
+              // ✅ 重新加载任务
+              const updatedTasks = await getTasks(selectedUnit!);
+              setTasks(updatedTasks || []);
+            } catch {
+              message.error(intl.formatMessage({id: 'unitAlloc.message.deleteFail'}));
+            }
           }}
         >
-          <Button icon={<DeleteOutlined />} danger size="small" />
+          <Button icon={<DeleteOutlined/>} danger size="small"/>
         </Popconfirm>
       ),
     },
   ];
 
+
   const taskTableTitle = (
-    <div style={{ display: "flex", justifyContent: "space-between" }}>
-      <Text strong>{intl.formatMessage({ id: "unitAlloc.unitTasks" })}</Text>
+    <div style={{display: "flex", justifyContent: "space-between"}}>
+      <Text strong>{intl.formatMessage({id: "unitAlloc.unitTasks"})}</Text>
       <Button
         type="primary"
-        icon={<PlusOutlined />}
+        icon={<PlusOutlined/>}
         onClick={() => {
           taskForm.resetFields();
           if (taskTypes.length === 0) {
-            message.info(intl.formatMessage({ id: "unitAlloc.message.addSuccess" }));
+            message.info(intl.formatMessage({id: "unitAlloc.message.addSuccess"}));
             setTypeModalOpen(true);
             return;
           }
           setTaskModalOpen(true);
         }}
       >
-        {intl.formatMessage({ id: "unitAlloc.addTask" })}
+        {intl.formatMessage({id: "unitAlloc.addTask"})}
       </Button>
     </div>
   );
@@ -295,13 +320,13 @@ const UnitAllocations: React.FC = () => {
     <Card
       key={tutor.id}
       title={tutor.name}
-      style={{ marginBottom: 24 }}
+      style={{marginBottom: 24}}
       bordered
       extra={
         <Space>
           <Button
             type="primary"
-            icon={<PlusOutlined />}
+            icon={<PlusOutlined/>}
             size="small"
             onClick={() => {
               setCurrentTutor(tutor.id);
@@ -309,15 +334,15 @@ const UnitAllocations: React.FC = () => {
               setAllocModalOpen(true);
             }}
           >
-            {intl.formatMessage({ id: "unitAlloc.addAllocation" })}
+            {intl.formatMessage({id: "unitAlloc.addAllocation"})}
           </Button>
           <Button
             type="primary"
             size="small"
-            icon={<SaveOutlined />}
+            icon={<SaveOutlined/>}
             onClick={() => onSaveTutorAllocations(tutor.id)}
           >
-            {intl.formatMessage({ id: "unitAlloc.saveAllocations" })}
+            {intl.formatMessage({id: "unitAlloc.saveAllocations"})}
           </Button>
         </Space>
       }
@@ -335,24 +360,22 @@ const UnitAllocations: React.FC = () => {
         }))}
         onChange={(taskId, week, val) => handleWeekChange(tutor.id, taskId, week, val)}
         onDelete={async (record) => {
-          const res = await deleteAllocationsByTask(tutor.id, record.taskId);
-          if (res.success) {
-            message.success(intl.formatMessage({ id: "unitAlloc.message.deleted" }));
-            setAllocations((prev) => {
-              const updated = { ...prev };
-              updated[tutor.id] = updated[tutor.id].filter((r) => r.taskId !== record.taskId);
-              return updated;
-            });
-          } else {
-            message.error(res.message || intl.formatMessage({ id: "unitAlloc.message.deleteFail" }));
-          }
+          await deleteAllocationsByTask(tutor.id, record.taskId);
+
+          message.success(intl.formatMessage({id: "unitAlloc.message.deleted"}));
+          setAllocations((prev) => {
+            const updated = {...prev};
+            updated[tutor.id] = updated[tutor.id].filter((r) => r.taskId !== record.taskId);
+            return updated;
+          });
+
         }}
       />
     </Card>
   ));
 
   const onCreateType = async () => {
-    const values  = await typeForm.validateFields();
+    const values = await typeForm.validateFields();
     const payload = {
       unitId: selectedUnit!,
       name: values.name.trim(),
@@ -360,38 +383,32 @@ const UnitAllocations: React.FC = () => {
       non_phd_pay_rate: values.non_phd_pay_rate,
     };
 
-    const res = await createTaskType(payload);
-    if (res.success) {
-      message.success(intl.formatMessage({ id: "unitAlloc.message.addSuccess" }));
-      getTaskTypes(selectedUnit!).then((r) => setTaskTypes(r.data || []));
-      setTypeModalOpen(false);
-    } else {
-      message.error(res.message || intl.formatMessage({ id: "unitAlloc.message.deleteFail" }));
-    }
+    await createTaskType(payload);
+    message.success(intl.formatMessage({id: "unitAlloc.message.addSuccess"}));
+    getTaskTypes(selectedUnit!).then((r) => setTaskTypes(r || []));
+    setTypeModalOpen(false);
   };
 
   const onCreateTask = async () => {
-    const { name, typeId } = await taskForm.validateFields();
-    const res = await createTask({
+    const {name, typeId} = await taskForm.validateFields();
+    await createTask({
       unitId: selectedUnit!,
       typeId: Number(typeId),
       name: name.trim(),
     });
-    if (res.success) {
-      message.success(intl.formatMessage({ id: "unitAlloc.message.taskCreated" }));
-      getTasks(selectedUnit!).then((r) => setTasks(r.data || []));
-      setTaskModalOpen(false);
-    } else {
-      message.error(res.message || intl.formatMessage({ id: "unitAlloc.message.deleteFail" }));
-    }
+
+    message.success(intl.formatMessage({id: "unitAlloc.message.taskCreated"}));
+    getTasks(selectedUnit!).then((r) => setTasks(r || []));
+    setTaskModalOpen(false);
+
   };
 
   return (
     <div>
-      <Card title={intl.formatMessage({ id: "unitAlloc.selectUnit" })} style={{ marginBottom: 24 }}>
+      <Card title={intl.formatMessage({id: "unitAlloc.selectUnit"})} style={{marginBottom: 24}}>
         <Select
-          style={{ width: 400 }}
-          placeholder={intl.formatMessage({ id: "unitAlloc.chooseUnit" })}
+          style={{width: 400}}
+          placeholder={intl.formatMessage({id: "unitAlloc.chooseUnit"})}
           onChange={(v) => setSelectedUnit(v)}
           value={selectedUnit ?? undefined}
         >
@@ -405,7 +422,7 @@ const UnitAllocations: React.FC = () => {
 
       {selectedUnit && (
         <Tabs defaultActiveKey="1">
-          <TabPane tab={intl.formatMessage({ id: "unitAlloc.editTasks" })} key="1">
+          <TabPane tab={intl.formatMessage({id: "unitAlloc.editTasks"})} key="1">
             <Card
               title={
                 <Text strong>
@@ -420,7 +437,7 @@ const UnitAllocations: React.FC = () => {
                 rowKey="id"
                 pagination={false}
                 title={() => typeTableTitle}
-                style={{ marginBottom: 24 }}
+                style={{marginBottom: 24}}
               />
               <Table
                 columns={taskColumns}
@@ -432,7 +449,7 @@ const UnitAllocations: React.FC = () => {
             </Card>
           </TabPane>
 
-          <TabPane tab={intl.formatMessage({ id: "unitAlloc.allocations" })} key="2">
+          <TabPane tab={intl.formatMessage({id: "unitAlloc.allocations"})} key="2">
             <Card
               title={
                 <Text strong>
@@ -449,7 +466,7 @@ const UnitAllocations: React.FC = () => {
 
       {/* 新增类型弹窗 */}
       <Modal
-        title={intl.formatMessage({ id: "unitAlloc.addType" })}
+        title={intl.formatMessage({id: "unitAlloc.addType"})}
         open={typeModalOpen}
         onOk={onCreateType}
         onCancel={() => setTypeModalOpen(false)}
@@ -458,32 +475,32 @@ const UnitAllocations: React.FC = () => {
         <Form form={typeForm} layout="vertical">
           <Form.Item
             name="name"
-            label={intl.formatMessage({ id: "unitAlloc.taskTypes" })}
-            rules={[{ required: true, message: intl.formatMessage({ id: "unitAlloc.message.addSuccess" }) }]}
+            label={intl.formatMessage({id: "unitAlloc.taskTypes"})}
+            rules={[{required: true, message: intl.formatMessage({id: "unitAlloc.message.addSuccess"})}]}
           >
-            <Input placeholder="e.g. Tutorial / Lab / Marking" />
+            <Input placeholder="e.g. Tutorial / Lab / Marking"/>
           </Form.Item>
 
           {/* PhD Pay Rate */}
           <Form.Item
             name="phd_pay_rate"
-            label={intl.formatMessage({ id: "unitAlloc.phdPayRate" })}
+            label={intl.formatMessage({id: "unitAlloc.phdPayRate"})}
             rules={[
               {
                 required: true,
-                message: intl.formatMessage({ id: "unitAlloc.message.phdPayRateRequired" }),
+                message: intl.formatMessage({id: "unitAlloc.message.phdPayRateRequired"}),
               },
               {
                 type: "number",
                 min: 0,
-                message: intl.formatMessage({ id: "unitAlloc.message.invalidNumber" }),
+                message: intl.formatMessage({id: "unitAlloc.message.invalidNumber"}),
               },
             ]}
           >
             <InputNumber
               min={0}
               step={0.5}
-              style={{ width: "100%" }}
+              style={{width: "100%"}}
               placeholder="e.g. 65.00"
               addonAfter="$ / hr"
             />
@@ -492,23 +509,23 @@ const UnitAllocations: React.FC = () => {
           {/* Non-PhD Pay Rate */}
           <Form.Item
             name="non_phd_pay_rate"
-            label={intl.formatMessage({ id: "unitAlloc.nonPhdPayRate" })}
+            label={intl.formatMessage({id: "unitAlloc.nonPhdPayRate"})}
             rules={[
               {
                 required: true,
-                message: intl.formatMessage({ id: "unitAlloc.message.nonPhdPayRateRequired" }),
+                message: intl.formatMessage({id: "unitAlloc.message.nonPhdPayRateRequired"}),
               },
               {
                 type: "number",
                 min: 0,
-                message: intl.formatMessage({ id: "unitAlloc.message.invalidNumber" }),
+                message: intl.formatMessage({id: "unitAlloc.message.invalidNumber"}),
               },
             ]}
           >
             <InputNumber
               min={0}
               step={0.5}
-              style={{ width: "100%" }}
+              style={{width: "100%"}}
               placeholder="e.g. 55.00"
               addonAfter="$ / hr"
             />
@@ -519,7 +536,7 @@ const UnitAllocations: React.FC = () => {
 
       {/* 新增任务弹窗 */}
       <Modal
-        title={intl.formatMessage({ id: "unitAlloc.addTask" })}
+        title={intl.formatMessage({id: "unitAlloc.addTask"})}
         open={taskModalOpen}
         onOk={onCreateTask}
         onCancel={() => setTaskModalOpen(false)}
@@ -528,17 +545,17 @@ const UnitAllocations: React.FC = () => {
         <Form form={taskForm} layout="vertical">
           <Form.Item
             name="name"
-            label={intl.formatMessage({ id: "unitAlloc.unitTasks" })}
-            rules={[{ required: true, message: intl.formatMessage({ id: "unitAlloc.message.addSuccess" }) }]}
+            label={intl.formatMessage({id: "unitAlloc.unitTasks"})}
+            rules={[{required: true, message: intl.formatMessage({id: "unitAlloc.message.addSuccess"})}]}
           >
-            <Input placeholder="e.g. Tutorial 3 Fri 1-3" />
+            <Input placeholder="e.g. Tutorial 3 Fri 1-3"/>
           </Form.Item>
           <Form.Item
             name="typeId"
-            label={intl.formatMessage({ id: "unitAlloc.taskTypes" })}
-            rules={[{ required: true, message: intl.formatMessage({ id: "unitAlloc.message.taskTypeUsed" }) }]}
+            label={intl.formatMessage({id: "unitAlloc.taskTypes"})}
+            rules={[{required: true, message: intl.formatMessage({id: "unitAlloc.message.taskTypeUsed"})}]}
           >
-            <Select placeholder={intl.formatMessage({ id: "unitAlloc.taskTypes" })}>
+            <Select placeholder={intl.formatMessage({id: "unitAlloc.taskTypes"})}>
               {taskTypes.map((t) => (
                 <Option key={t.id} value={t.id}>
                   {t.name}
@@ -550,7 +567,7 @@ const UnitAllocations: React.FC = () => {
       </Modal>
 
       <Modal
-        title={intl.formatMessage({ id: "unitAlloc.addAllocation" })}
+        title={intl.formatMessage({id: "unitAlloc.addAllocation"})}
         open={allocModalOpen}
         onOk={onAddAllocation}
         onCancel={() => setAllocModalOpen(false)}
@@ -560,11 +577,11 @@ const UnitAllocations: React.FC = () => {
           {/* Task 选择 */}
           <Form.Item
             name="taskId"
-            label={intl.formatMessage({ id: "unitAlloc.unitTasks" })}
-            rules={[{ required: true, message: intl.formatMessage({ id: "unitAlloc.message.addSuccess" }) }]}
+            label={intl.formatMessage({id: "unitAlloc.unitTasks"})}
+            rules={[{required: true, message: intl.formatMessage({id: "unitAlloc.message.addSuccess"})}]}
           >
             <Select
-              placeholder={intl.formatMessage({ id: "unitAlloc.unitTasks" })}
+              placeholder={intl.formatMessage({id: "unitAlloc.unitTasks"})}
               onChange={(taskId) => {
                 const task = tasks.find((t) => t.id === taskId);
                 if (task) {
@@ -586,7 +603,7 @@ const UnitAllocations: React.FC = () => {
 
           {/* 展示对应 payrate */}
           <Form.Item noStyle shouldUpdate={(prev, curr) => prev.taskId !== curr.taskId}>
-            {({ getFieldValue }) => {
+            {({getFieldValue}) => {
               const taskId = getFieldValue("taskId");
               console.log(tasks)
               const task = tasks.find((t) => t.id === taskId);
@@ -596,8 +613,8 @@ const UnitAllocations: React.FC = () => {
                 <>
                   <Form.Item
                     name="selectedPayRate"
-                    label={intl.formatMessage({ id: "unitAlloc.selectPayRate" })}
-                    rules={[{ required: true, message: intl.formatMessage({ id: "unitAlloc.message.payRateRequired" }) }]}
+                    label={intl.formatMessage({id: "unitAlloc.selectPayRate"})}
+                    rules={[{required: true, message: intl.formatMessage({id: "unitAlloc.message.payRateRequired"})}]}
                   >
                     <Select
                       labelInValue

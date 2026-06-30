@@ -14,6 +14,8 @@ import com.usyd.catams.domain.model.UnitAssignment;
 import com.usyd.catams.domain.model.WorkEntry;
 import com.usyd.catams.infrastructure.cache.CourseMetaCache;
 import com.usyd.catams.infrastructure.cache.RedisWorkEntryCache;
+import com.usyd.catams.infrastructure.exception.BusinessCode;
+import com.usyd.catams.infrastructure.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -45,7 +47,6 @@ public class SubmitWorkEntryHandler {
         try {
             unit = courseMetaCache.getById(req.unitId());
         } catch (Exception e) {
-            // 这里不直接抛，让它继续走 DB fallback
             log.warn("Cache lookup failed for unitId={}, fallback to DB", req.unitId(), e);
         }
 
@@ -59,17 +60,9 @@ public class SubmitWorkEntryHandler {
             throw new IllegalStateException("课程不存在");
         }
 
-
-
-        // 根据task 获取worktype
+        // 根据 task 获取 workType
         Long taskId = req.taskId();
         String workType = taskMapper.getTaskTypeById(taskId);
-
-        // 唯一性校验：同 tutor + original_planned_id 不能重复
-        boolean exists = workEntryMapper.exists(new LambdaQueryWrapper<WorkEntry>()
-                .eq(WorkEntry::getTutorId, submitterId)
-                .eq(WorkEntry::getOriginPlannedId, req.originPlannedId()));
-        if (exists) throw new IllegalStateException("该任务在该周已提交过工时");
 
         // 获取当前的 pay_rate 作为快照
         BigDecimal payRateSnapShot = plannedTaskAllocationMapper.getPayRateByTaskId(taskId);
@@ -79,6 +72,50 @@ public class SubmitWorkEntryHandler {
 
         LocalDateTime now = LocalDateTime.now();
 
+        // ⭐ 关键改动：先按唯一键查已有记录
+        WorkEntry existing = workEntryMapper.selectOne(new LambdaQueryWrapper<WorkEntry>()
+                .eq(WorkEntry::getTutorId, submitterId)
+                .eq(WorkEntry::getUnitId, req.unitId())
+                .eq(WorkEntry::getOriginPlannedId, req.originPlannedId())
+                .eq(WorkEntry::getWeekStart, req.weekStart())
+        );
+
+        if (existing != null) {
+            // 已经有记录，分两种情况：REJECTED 可以重新提交，其余一律不允许
+            if (existing.getStatus() == WorkStatus.REJECTED) {
+                // ⭐ 当作“重新提交”：更新这条记录
+                existing.setHours(req.hours());
+                existing.setDescription(req.description());
+                existing.setSource(req.substitute() ? WorkSource.ADHOC : WorkSource.PLANNED);
+                existing.setWorkType(workType);
+                existing.setPayRateSnapshot(payRateSnapShot);
+                existing.setStatus(WorkStatus.SUBMITTED);
+                existing.setUpdatedAt(now);
+                // version / createdAt 保持不动（按你现在的设计）
+
+                workEntryMapper.updateById(existing);
+
+                // 重新插入一条 ApprovalTask 记录这次提交
+                var task = new ApprovalTask();
+                task.setEntryId(existing.getId());
+                task.setStep(ApprovalStep.TUTOR);
+                task.setAction(Action.SUBMITTED);
+                task.setComment(null);
+                task.setActorId(submitterId);
+                String name = userMapper.findNameById(submitterId);
+                task.setActorName(name);
+                approvalTaskMapper.insert(task);
+
+                notificationService.publishWorkEntrySubmitted(submitterId, existing.getId(), taskId);
+
+                return existing.getId();
+            } else {
+                // 其它状态：SUBMITTED / APPROVED / FINAL_APPROVED 等，一律不允许重复提交
+                throw new BusinessException(BusinessCode.WORK_ENTRY_DUPLICATE);
+            }
+        }
+
+        // ⭐ 下面是“全新提交”的原始插入逻辑（保持不变）
         var entry = new WorkEntry();
         entry.setPayRateSnapshot(payRateSnapShot);
         entry.setTutorId(submitterId);
@@ -101,8 +138,7 @@ public class SubmitWorkEntryHandler {
 
         workEntryMapper.insert(entry);
 
-        // workEntry 插入成功之后插入一条 approvalTask
-        var task = new ApprovalTask();
+        ApprovalTask task = new ApprovalTask();
         task.setEntryId(entry.getId());
         task.setStep(ApprovalStep.TUTOR);
         task.setAction(Action.SUBMITTED);
@@ -115,8 +151,8 @@ public class SubmitWorkEntryHandler {
         notificationService.publishWorkEntrySubmitted(submitterId, entry.getId(), taskId);
 
         return entry.getId();
-
     }
+
 }
 
 

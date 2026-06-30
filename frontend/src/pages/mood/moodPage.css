@@ -1,0 +1,110 @@
+/* 🌈 “有新的心情？”按钮 */
+.mood-new-btn {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 8px 16px;
+  background: linear-gradient(90deg, #89f7fe 0%, #66a6ff 100%);
+  border: none;
+  color: white !important;
+  border-radius: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.mood-new-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(102, 166, 255, 0.3);
+  filter: brightness(1.05);
+}
+
+/* “返回”按钮浅灰风格 */
+.mood-back-btn {
+  color: #888 !important;
+  font-size: 13px;
+  text-decoration: underline;
+}
+
+.mood-back-btn:hover {
+  color: #666 !important;
+}
+
+/* 整个页面的外层背景，模仿移动 App 容器 */
+.mood-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  /*background: linear-gradient(180deg, #f5f7fa 0%, #eaf0f6 100%);*/
+  min-height: calc(100vh - 64px); /* 减去顶部导航高度 */
+  padding: 24px 0;
+}
+
+/* 主卡片区域 */
+.mood-card {
+  width: 100%;
+  max-width: 420px; /* ✅ 限制卡片宽度 */
+  min-height: 580px; /* ✅ 固定高度，防止切换时抖动 */
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+/* 卡片内部 */
+.mood-card .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 12px 16px;
+}
+
+/* 顶部标题 */
+.mood-header {
+  text-align: center;
+  font-weight: 600;
+  font-size: 18px;
+  margin-bottom: 12px;
+  color: #333;
+}
+
+/* Tabs 样式 */
+.mood-tabs {
+  flex-shrink: 0;
+  margin-bottom: 8px;
+}
+
+.mood-tabs .ant-tabs-nav {
+  margin-bottom: 8px;
+}
+
+.mood-tabs .ant-tabs-tab {
+  font-size: 14px;
+}
+
+/* 内容容器（每个 tab 的子内容） */
+.mood-section {
+  flex: 1;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: opacity 0.25s ease;
+  padding-bottom: 8px;
+}
+
+/* 禁止横向滚动 */
+.ant-layout-content {
+  overflow-x: hidden !important;
+}
+
+/* 让滚动条更细、更柔和 */
+.mood-section::-webkit-scrollbar {
+  width: 4px;
+}
+.mood-section::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.15);
+  border-radius: 2px;
+}
+

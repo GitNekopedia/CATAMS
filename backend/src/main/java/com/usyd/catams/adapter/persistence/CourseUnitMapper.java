@@ -46,71 +46,56 @@ public interface CourseUnitMapper extends BaseMapper<UnitAssignment> {
     LocalDate findStartDateByUnitId(@Param("unitId") Long unitId);
 
 
+    @Select("""
+                SELECT id, code, name, semester, start_date, end_date,
+                       total_budget_hours, remaining_budget, created_at, updated_at
+                FROM course_unit
+                WHERE (#{code} IS NULL OR code LIKE CONCAT('%', #{code}, '%'))
+                  AND (#{name} IS NULL OR name LIKE CONCAT('%', #{name}, '%'))
+                  AND (#{semester} IS NULL OR semester = #{semester})
+                  AND (#{minBudget} IS NULL OR remaining_budget >= #{minBudget})
+                  AND (#{maxBudget} IS NULL OR remaining_budget <= #{maxBudget})
+                  AND (#{startDate} IS NULL OR start_date >= #{startDate})
+                  AND (#{endDate} IS NULL OR end_date <= #{endDate})
+                ORDER BY ${sortField} ${sortOrder}
+                LIMIT #{pageSize} OFFSET #{offset}
+            """)
+    List<CourseUnitDTO> selectPaged(@Param("code") String code, @Param("name") String name, @Param("semester") String semester, @Param("minBudget") Double minBudget, @Param("maxBudget") Double maxBudget, @Param("startDate") String startDate, @Param("endDate") String endDate, @Param("offset") int offset, @Param("pageSize") int pageSize, @Param("sortField") String sortField, @Param("sortOrder") String sortOrder);
 
     @Select("""
-        SELECT id, code, name, semester, start_date, end_date,
-               total_budget_hours, remaining_budget, created_at, updated_at
-        FROM course_unit
-        WHERE (#{code} IS NULL OR code LIKE CONCAT('%', #{code}, '%'))
-          AND (#{name} IS NULL OR name LIKE CONCAT('%', #{name}, '%'))
-          AND (#{semester} IS NULL OR semester = #{semester})
-          AND (#{minBudget} IS NULL OR remaining_budget >= #{minBudget})
-          AND (#{maxBudget} IS NULL OR remaining_budget <= #{maxBudget})
-          AND (#{startDate} IS NULL OR start_date >= #{startDate})
-          AND (#{endDate} IS NULL OR end_date <= #{endDate})
-        ORDER BY ${sortField} ${sortOrder}
-        LIMIT #{pageSize} OFFSET #{offset}
-    """)
-    List<CourseUnitDTO> selectPaged(@Param("code") String code,
-                                    @Param("name") String name,
-                                    @Param("semester") String semester,
-                                    @Param("minBudget") Double minBudget,
-                                    @Param("maxBudget") Double maxBudget,
-                                    @Param("startDate") String startDate,
-                                    @Param("endDate") String endDate,
-                                    @Param("offset") int offset,
-                                    @Param("pageSize") int pageSize,
-                                    @Param("sortField") String sortField,
-                                    @Param("sortOrder") String sortOrder);
-
-    @Select("""
-        SELECT COUNT(*) FROM course_unit
-        WHERE (#{code} IS NULL OR code LIKE CONCAT('%', #{code}, '%'))
-          AND (#{name} IS NULL OR name LIKE CONCAT('%', #{name}, '%'))
-          AND (#{semester} IS NULL OR semester = #{semester})
-          AND (#{minBudget} IS NULL OR remaining_budget >= #{minBudget})
-          AND (#{maxBudget} IS NULL OR remaining_budget <= #{maxBudget})
-          AND (#{startDate} IS NULL OR start_date >= #{startDate})
-          AND (#{endDate} IS NULL OR end_date <= #{endDate})
-    """)
-    long countByCondition(@Param("code") String code,
-                          @Param("name") String name,
-                          @Param("semester") String semester,
-                          @Param("minBudget") Double minBudget,
-                          @Param("maxBudget") Double maxBudget,
-                          @Param("startDate") String startDate,
-                          @Param("endDate") String endDate);
+                SELECT COUNT(*) FROM course_unit
+                WHERE (#{code} IS NULL OR code LIKE CONCAT('%', #{code}, '%'))
+                  AND (#{name} IS NULL OR name LIKE CONCAT('%', #{name}, '%'))
+                  AND (#{semester} IS NULL OR semester = #{semester})
+                  AND (#{minBudget} IS NULL OR remaining_budget >= #{minBudget})
+                  AND (#{maxBudget} IS NULL OR remaining_budget <= #{maxBudget})
+                  AND (#{startDate} IS NULL OR start_date >= #{startDate})
+                  AND (#{endDate} IS NULL OR end_date <= #{endDate})
+            """)
+    long countByCondition(@Param("code") String code, @Param("name") String name, @Param("semester") String semester, @Param("minBudget") Double minBudget, @Param("maxBudget") Double maxBudget, @Param("startDate") String startDate, @Param("endDate") String endDate);
 
     @Insert("""
-        INSERT INTO course_unit(code, name, semester, start_date, end_date, total_budget_hours, remaining_budget)
-        VALUES(#{code}, #{name}, #{semester}, #{startDate}, #{endDate}, #{totalBudgetHours}, #{remainingBudget})
-    """)
+                INSERT INTO course_unit(code, name, semester, start_date, end_date, total_budget_hours, remaining_budget)
+                VALUES(#{code}, #{name}, #{semester}, #{startDate}, #{endDate}, #{totalBudgetHours}, #{remainingBudget})
+            """)
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insert(CourseUnit entity);
 
     @Update("""
-        UPDATE course_unit
-        SET code=#{code}, name=#{name}, semester=#{semester},
-            start_date=#{startDate}, end_date=#{endDate},
-            total_budget_hours=#{totalBudgetHours}, remaining_budget=#{remainingBudget}
-        WHERE id=#{id}
-    """)
+                UPDATE course_unit
+                SET code=#{code}, name=#{name}, semester=#{semester},
+                    start_date=#{startDate}, end_date=#{endDate},
+                    total_budget_hours=#{totalBudgetHours}, remaining_budget=#{remainingBudget}
+                WHERE id=#{id}
+            """)
     void update(CourseUnit entity);
 
     @Delete("DELETE FROM course_unit WHERE id=#{id}")
     void delete(Long id);
 
-    /** 安全白名单：防止SQL注入 */
+    /**
+     * 安全白名单：防止SQL注入
+     */
     default String getSafeSortField(String sortField) {
         if (sortField == null) return "created_at";
         return switch (sortField) {
@@ -125,4 +110,45 @@ public interface CourseUnitMapper extends BaseMapper<UnitAssignment> {
         };
     }
 
+    /**
+     * 根据讲师 ID 计算该讲师所有课程的平均预算使用比例
+     */
+    @Select("""
+                SELECT
+                    ROUND(AVG(
+                        CASE
+                            WHEN total_budget_hours > 0
+                            THEN (total_budget_hours - remaining_budget) / total_budget_hours
+                            ELSE 0
+                        END
+                    ) * 100, 2) AS average_budget_usage_percent
+                FROM course_unit cu
+                JOIN unit_assignment ua ON cu.id = ua.unit_id
+                WHERE ua.user_id = #{lecturerId}
+                    AND ua.role = 'LECTURER';
+            """)
+    double averageBudgetUsage(Long id);
+
+    /**
+     * 获取讲师剩余的总预算
+     *
+     * @param id 讲师ID
+     * @return 剩余的总预算
+     */
+    @Select("""
+            SELECT COALESCE(SUM(cu.remaining_budget), 0) total_remaining_budget
+            FROM course_unit cu
+            JOIN unit_assignment ua ON cu.id = ua.unit_id
+            WHERE ua.user_id = #{id}
+            """)
+    double getTotalRemainingBudget(Long id);
+
+    @Select("SELECT COUNT(*) FROM course_unit")
+    long countAll();
+
+    @Select("SELECT SUM(total_budget_hours) FROM course_unit")
+    Double sumTotalBudgetHours();
+
+    @Select("SELECT SUM(remaining_budget) FROM course_unit")
+    Double sumRemainingBudgetHours();
 }

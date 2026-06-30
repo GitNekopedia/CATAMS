@@ -1,29 +1,29 @@
 package com.usyd.catams.adapter.web;
 
-import com.usyd.catams.adapter.web.dto.ApiResponse;
 import com.usyd.catams.adapter.web.dto.CourseUnitDTO;
 import com.usyd.catams.application.query.CourseQueryService;
-import com.usyd.catams.application.service.AuthTokenService;
-import jakarta.servlet.http.HttpServletRequest;
+import com.usyd.catams.infrastructure.exception.ApiResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+/**
+ * HR 管理课程相关接口
+ * 所有接口均经过 AuthInterceptor 拦截，Token 已验证。
+ */
 @RestController
 @RequestMapping("/api/hr/course")
+@RequiredArgsConstructor
 public class HRCourseController {
 
-    private final AuthTokenService tokenService;
     private final CourseQueryService courseQueryService;
 
-    public HRCourseController(AuthTokenService tokenService, CourseQueryService courseQueryService) {
-        this.tokenService = tokenService;
-        this.courseQueryService = courseQueryService;
-    }
-
+    /**
+     * 分页查询课程列表
+     */
     @GetMapping("/list")
     public ApiResponse<Map<String, Object>> listCourses(
-            HttpServletRequest request,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int pageSize,
             @RequestParam(required = false) String code,
@@ -36,43 +36,37 @@ public class HRCourseController {
             @RequestParam(required = false) String sortField,
             @RequestParam(required = false) String sortOrder
     ) {
-        var user = tokenService.extractUserFromRequest(request);
-        if (user == null) return ApiResponse.fail("Unauthorized");
-        var result = courseQueryService.listPaged(code, name, semester, minBudget, maxBudget, startDate, endDate, page, pageSize, sortField, sortOrder);
+        var result = courseQueryService.listPaged(
+                code, name, semester, minBudget, maxBudget,
+                startDate, endDate, page, pageSize, sortField, sortOrder
+        );
         return ApiResponse.ok(result);
     }
 
-    /** 2️⃣ 创建课程 */
+    /**
+     * 创建课程
+     */
     @PostMapping("/create")
     public ApiResponse<Map<String, Object>> createCourse(@RequestBody CourseUnitDTO dto) {
-        try {
-            Long id = courseQueryService.create(dto);
-            return ApiResponse.ok(Map.of("id", id));
-        } catch (Exception e) {
-            return ApiResponse.fail("创建课程失败: " + e.getMessage());
-        }
+        Long id = courseQueryService.create(dto);
+        return ApiResponse.ok(Map.of("id", id));
     }
 
-    /** 3️⃣ 更新课程 */
+    /**
+     * 更新课程
+     */
     @PutMapping("/update/{id}")
     public ApiResponse<String> updateCourse(@PathVariable Long id, @RequestBody CourseUnitDTO dto) {
-        try {
-            courseQueryService.update(id, dto);
-            return ApiResponse.ok("课程更新成功");
-        } catch (Exception e) {
-            return ApiResponse.fail("更新失败: " + e.getMessage());
-        }
+        courseQueryService.update(id, dto);
+        return ApiResponse.ok("课程更新成功");
     }
 
-    /** 4️⃣ 删除课程 */
+    /**
+     * 删除课程
+     */
     @DeleteMapping("/delete/{id}")
     public ApiResponse<String> deleteCourse(@PathVariable Long id) {
-        try {
-            courseQueryService.delete(id);
-            return ApiResponse.ok("删除成功");
-        } catch (Exception e) {
-            return ApiResponse.fail("删除失败: " + e.getMessage());
-        }
+        courseQueryService.delete(id);
+        return ApiResponse.ok("删除成功");
     }
-
 }

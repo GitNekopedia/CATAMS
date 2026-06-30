@@ -14,7 +14,6 @@ const CourseCardsTutor: React.FC<Props> = ({ courses }) => {
   const columns: ColumnsType<TutorCourse> = [
     { title: intl.formatMessage({ id: 'courseCards.code' }), dataIndex: 'code', key: 'code' },
     { title: intl.formatMessage({ id: 'courseCards.name' }), dataIndex: 'name', key: 'name' },
-    { title: intl.formatMessage({ id: 'courseCards.payRate' }), dataIndex: 'payRate', key: 'payRate' },
     { title: intl.formatMessage({ id: 'courseCards.quotaHours' }), dataIndex: 'quotaHours', key: 'quotaHours' },
   ];
 
@@ -22,7 +21,6 @@ const CourseCardsTutor: React.FC<Props> = ({ courses }) => {
     <div>
       <div>{intl.formatMessage({ id: 'courseCards.code' })}: {course.code}</div>
       <div>{intl.formatMessage({ id: 'courseCards.name' })}: {course.name}</div>
-      <div>{intl.formatMessage({ id: 'courseCards.payRate' })}: ${course.payRate}/hr</div>
       <div>{intl.formatMessage({ id: 'courseCards.quotaHours' })}: {course.quotaHours} hrs</div>
     </div>
   );

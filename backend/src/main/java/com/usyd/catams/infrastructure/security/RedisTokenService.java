@@ -3,7 +3,9 @@ package com.usyd.catams.infrastructure.security;
 import com.usyd.catams.adapter.web.dto.LoginResponse;
 import com.usyd.catams.application.service.AuthTokenService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
 
 
 import java.time.Duration;
@@ -15,10 +17,12 @@ import java.util.UUID;
  * - 支持多节点共享
  * - 防止内存泄漏
  */
+@Service
+@Primary
 public class RedisTokenService implements AuthTokenService {
 
     private static final String TOKEN_PREFIX = "auth:token:";  // Redis key 前缀
-    private static final Duration TOKEN_TTL = Duration.ofMinutes(30); // token 有效期30min
+    private static final Duration TOKEN_TTL = Duration.ofDays(3); // token 有效期3天
 
     private final RedisTemplate<String, Object> redisTemplate;
 
@@ -46,13 +50,18 @@ public class RedisTokenService implements AuthTokenService {
     @Override
     public LoginResponse.UserDTO validateAndGetUser(String token) {
         if (token == null || token.isEmpty()) return null;
-        Object obj = redisTemplate.opsForValue().get(TOKEN_PREFIX + token);
+
+        String key = TOKEN_PREFIX + token;
+        Object obj = redisTemplate.opsForValue().get(key);
         System.out.println("类型 = " + (obj == null ? "null" : obj.getClass().getName()));
         System.out.println("值 = " + obj);
+
         if (obj instanceof LoginResponse.UserDTO user) {
+            // 这里做滑动过期：每次验证通过就刷新 TTL
+            redisTemplate.expire(key, TOKEN_TTL);
             return user;
         }
-        return null; // 不存在或过期自动返回 null
+        return null; // 不存在或过期
     }
 
     /**

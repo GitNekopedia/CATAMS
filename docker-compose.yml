@@ -20,7 +20,7 @@ services:
     container_name: catams-redis
     restart: always
     ports:
-      - "6379:6379"
+      - "16379:6379"
     volumes:
       - ./redis_data:/data
     command: [ "redis-server", "--appendonly", "yes" ]
@@ -30,8 +30,8 @@ services:
     container_name: catams-rabbitmq
     restart: always
     ports:
-      - "5672:5672"     # 应用连接端口（Spring Boot 用这个）
-      - "15672:15672"   # 管理控制台端口（浏览器查看队列）
+      - "15674:5672"     # 宿主机 15674 -> 容器 5672 (应用连接)
+      - "15673:15672"    # 宿主机 15673 -> 容器 15672 (管理控制台)
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin

@@ -1,5 +1,5 @@
-import { Form, Select, InputNumber } from 'antd';
-import React from 'react';
+import { Form, Select, InputNumber, Input } from 'antd';
+import React, { useMemo } from 'react';
 import { useIntl } from '@umijs/max';
 
 interface AssignmentFormProps {
@@ -15,6 +15,26 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ form, courses, users })
     { label: 'Lecturer', value: 'LECTURER' },
     { label: 'Tutor', value: 'TUTOR' },
   ];
+
+  // ⭐ 只保留 Lecturer / Tutor 的用户
+  const assignableUsers = useMemo(
+    () => (users || []).filter(
+      (u) => u.role === 'Lecturer' || u.role === 'Tutor',
+    ),
+    [users],
+  );
+
+  // ⭐ 选中用户时，自动把该用户的 role 写入表单
+  const handleUserChange = (userId: number) => {
+    const selected = assignableUsers.find((u) => u.id === userId);
+    if (selected) {
+      form.setFieldsValue({
+        role: selected.role,
+      });
+    } else {
+      form.setFieldsValue({ role: undefined });
+    }
+  };
 
   return (
     <Form form={form} layout="vertical">
@@ -33,7 +53,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ form, courses, users })
           showSearch
           placeholder={intl.formatMessage({ id: 'hr.assignmentForm.course.placeholder' })}
           optionFilterProp="label"
-          options={(courses || []).map(c => ({
+          options={(courses || []).map((c) => ({
             label: `${c.code} - ${c.name}`,
             value: c.id,
           }))}
@@ -55,14 +75,15 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ form, courses, users })
           showSearch
           placeholder={intl.formatMessage({ id: 'hr.assignmentForm.user.placeholder' })}
           optionFilterProp="label"
-          options={(users || []).map(u => ({
-            label: `${u.name} (${u.email})`,
+          options={assignableUsers.map((u) => ({
+            label: `${u.name} (${u.email}) [${u.role}]`,
             value: u.id,
           }))}
+          onChange={handleUserChange}  // ⭐ 关键：自动带出 role
         />
       </Form.Item>
 
-      {/* Role */}
+      {/* Role：由 user.role 决定，不允许手动选择 */}
       <Form.Item
         name="role"
         label={intl.formatMessage({ id: 'hr.assignmentForm.role.label' })}
@@ -73,27 +94,18 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ form, courses, users })
           },
         ]}
       >
+        {/* 你可以用 disabled Select，看起来还是下拉框样式 */}
         <Select
+          disabled
           options={roleOptions}
           placeholder={intl.formatMessage({ id: 'hr.assignmentForm.role.placeholder' })}
         />
+        {/* 或者用 Input 展示纯文本，也可以：
+        <Input disabled />
+        */}
       </Form.Item>
 
-      {/* Pay Rate */}
-      <Form.Item
-        name="payRate"
-        label={intl.formatMessage({ id: 'hr.assignmentForm.payRate.label' })}
-      >
-        <InputNumber min={0} precision={2} style={{ width: '100%' }} />
-      </Form.Item>
 
-      {/* Quota Hours */}
-      <Form.Item
-        name="quotaHours"
-        label={intl.formatMessage({ id: 'hr.assignmentForm.quotaHours.label' })}
-      >
-        <InputNumber min={0} precision={2} style={{ width: '100%' }} />
-      </Form.Item>
     </Form>
   );
 };

@@ -1,42 +1,36 @@
 import React from 'react';
 import { Button, Space } from 'antd';
+import { useIntl, history } from '@umijs/max';
 import ActivityBase from './ActivityBase';
-import { useIntl } from '@umijs/max';
 import WorkEntry = API.LecturerPendingWorkEntry;
 
 type Props = {
   entries: WorkEntry[];
-  onApprove?: (entryId: number) => Promise<void> | void;
-  onReject?: (entryId: number) => Promise<void> | void;
 };
 
-const ActivityLecturer: React.FC<Props> = ({ entries, onApprove, onReject }) => {
+const ActivityLecturer: React.FC<Props> = ({ entries }) => {
   const intl = useIntl();
+
+  const handleView = (entryId: number) => {
+    // ✅ 跳转到 Work Entries 页面，可带上参数（例如某条 entryId）
+    history.push(`/lecturer/work-entries?highlight=${entryId}`);
+  };
 
   return (
     <ActivityBase
       entries={entries}
       header={<div>{intl.formatMessage({ id: 'activity.lecturer.header' })}</div>}
-      renderActions={(item) => {
-        const pending = item.status === 'SUBMITTED' || item.status === 'APPROVED_BY_TUTOR';
-        return (
-          <>
-            <div style={{ marginRight: 16 }}>
-              {intl.formatMessage({ id: 'activity.lecturer.tutor' })}: {item.tutorName ?? intl.formatMessage({ id: 'activity.lecturer.unknownTutor' })}
-            </div>
-            {pending && (
-              <Space>
-                <Button size="small" type="primary" onClick={() => onApprove?.(item.workEntryId)}>
-                  {intl.formatMessage({ id: 'activity.lecturer.approve' })}
-                </Button>
-                <Button size="small" danger onClick={() => onReject?.(item.workEntryId)}>
-                  {intl.formatMessage({ id: 'activity.lecturer.reject' })}
-                </Button>
-              </Space>
-            )}
-          </>
-        );
-      }}
+      renderActions={(item) => (
+        <Space>
+          <Button
+            size="small"
+            type="link"
+            onClick={() => handleView(item.workEntryId)}
+          >
+            {intl.formatMessage({ id: 'activity.lecturer.view' })}
+          </Button>
+        </Space>
+      )}
     />
   );
 };

@@ -48,8 +48,8 @@ const ActivityBase = <T extends BaseWorkEntry>({ entries, header, renderActions 
         return (
           <List.Item key={id} extra={renderActions?.(item)}>
             <List.Item.Meta
-              title={`${item.unitCode ?? '-'} ${item.unitName ?? intl.formatMessage({ id: 'activity.unit.unknown' })} (${item.weekStart})`}
-              description={`${intl.formatMessage({ id: 'activity.hours' })}: ${item.hours} • ${intl.formatMessage({ id: 'activity.workType' })}: ${item.workType ?? '-'}`}
+              title={`${item.unitCode ?? '-'} ${item.unitName ?? intl.formatMessage({ id: 'activity.unit.unknown' })} (${item.workType ?? '-'})`}
+              description={`${intl.formatMessage({ id: 'activity.hours' })}: ${item.hours}`}
             />
             <Tag color={statusColor(item.status)}>{item.status}</Tag>
           </List.Item>

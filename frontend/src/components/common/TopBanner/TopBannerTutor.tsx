@@ -1,12 +1,12 @@
 import TopBannerBase from './TopBannerBase';
-import TutorCourse = API.TutorCourse;
+import TutorOverView = API.TutorOverView;
 
 type Props = {
-  courses: TutorCourse[];
+  overview: TutorOverView | null;
 };
 
-const TopBannerTutor: React.FC<Props> = ({ courses }) => {
-  return <TopBannerBase role="TUTOR" coursesCount={courses.length} />;
+const TopBannerTutor: React.FC<Props> = ({ overview }) => {
+  return <TopBannerBase role="TUTOR" overview={overview} />;
 };
 
 export default TopBannerTutor;

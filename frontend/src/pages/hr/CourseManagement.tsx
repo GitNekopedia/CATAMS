@@ -44,6 +44,7 @@ const CourseManagement: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCourse, setEditingCourse] = useState<API.CourseUnit | null>(null);
 
+  /** ✅ 获取课程列表 */
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -60,13 +61,10 @@ const CourseManagement: React.FC = () => {
         params.endDate = filters.dateRange[1].format('YYYY-MM-DD');
       }
 
-      const res = await getCourseList(params);
-      if (res.success) {
-        setCourses(res.data.list);
-        setTotal(res.data.total);
-      } else {
-        message.error(res.message);
-      }
+      // ✅ 拦截器返回纯业务数据（{ list, total }）
+      const data = await getCourseList(params);
+      setCourses(data.list || []);
+      setTotal(data.total || 0);
     } catch {
       message.error(intl.formatMessage({ id: 'hr.courseManagement.message.loadFail' }));
     } finally {
@@ -78,40 +76,37 @@ const CourseManagement: React.FC = () => {
     fetchData();
   }, [page, pageSize]);
 
+  /** ✅ 保存（创建或更新）课程 */
   const handleSave = async (values: any) => {
-    let res;
-    if (editingCourse) {
-      res = await updateCourse(editingCourse.id, values);
-    } else {
-      res = await createCourse(values);
-    }
+    try {
+      if (editingCourse) {
+        await updateCourse(editingCourse.id, values);
+        message.success(intl.formatMessage({ id: 'hr.courseManagement.message.updateSuccess' }));
+      } else {
+        await createCourse(values);
+        message.success(intl.formatMessage({ id: 'hr.courseManagement.message.createSuccess' }));
+      }
 
-    if (res.success) {
-      message.success(
-        intl.formatMessage({
-          id: editingCourse
-            ? 'hr.courseManagement.message.updateSuccess'
-            : 'hr.courseManagement.message.createSuccess',
-        }),
-      );
       setModalVisible(false);
       setEditingCourse(null);
       fetchData();
-    } else {
-      message.error(res.message || intl.formatMessage({ id: 'hr.courseManagement.message.actionFail' }));
+    } catch {
+      message.error(intl.formatMessage({ id: 'hr.courseManagement.message.actionFail' }));
     }
   };
 
+  /** ✅ 删除课程 */
   const handleDelete = async (record: API.CourseUnit) => {
-    const res = await deleteCourse(record.id);
-    if (res.success) {
+    try {
+      await deleteCourse(record.id);
       message.success(intl.formatMessage({ id: 'hr.courseManagement.message.deleteSuccess' }));
       fetchData();
-    } else {
-      message.error(res.message);
+    } catch {
+      message.error(intl.formatMessage({ id: 'hr.courseManagement.message.deleteFail' }));
     }
   };
 
+  /** ✅ 表格列定义 */
   const columns: ColumnsType<API.CourseUnit> = [
     {
       title: intl.formatMessage({ id: 'hr.courseManagement.table.code' }),
@@ -175,6 +170,7 @@ const CourseManagement: React.FC = () => {
     },
   ];
 
+  /** ✅ 重置筛选条件 */
   const handleReset = () => {
     setFilters({
       code: '',

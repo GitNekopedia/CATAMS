@@ -49,19 +49,30 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({
 
   const loginOut = async () => {
     await outLogin();
-    const { search, pathname } = window.location;
+    localStorage.clear();
+
+    const { pathname, search } = window.location;
     const urlParams = new URL(window.location.href).searchParams;
+
+    // ✅ 如果当前在 mood 模块中
+    if (pathname.startsWith('/mood')) {
+      history.replace('/mood/login');
+      return;
+    }
+
+    // 默认逻辑：跳转到通用登录页
     const searchParams = new URLSearchParams({
       redirect: pathname + search,
     });
     const redirect = urlParams.get('redirect');
-    if (window.location.pathname !== '/user/login' && !redirect) {
+    if (pathname !== '/user/login' && !redirect) {
       history.replace({
         pathname: '/user/login',
         search: searchParams.toString(),
       });
     }
   };
+
 
   const { styles } = useStyles();
   const { initialState, setInitialState } = useModel('@@initialState');
